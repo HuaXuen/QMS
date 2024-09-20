@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "189708282115",
+    "project_id": "tpqms-fyp",
+    "storage_bucket": "tpqms-fyp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:189708282115:android:1a2f27abf4bc152b542136",
+        "android_client_info": {
+          "package_name": "com.example.tpqms"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgU-SDaZM8B5D3OOcb5KITsBW05TBMXVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
