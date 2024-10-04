@@ -41,20 +41,16 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
   Widget build(BuildContext context) {
     final _authProvider = context.watch<AuthenticationProvider>();
     //final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: Color(0xFF0E1320),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF0E1320),
-        elevation: 0,
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 1),
+              SizedBox(height: 70),
               Center(
                 child: Image.asset(
                   AssetsManager.tpqmsIcon,
@@ -152,12 +148,12 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
                               icon: Icon(Icons.arrow_forward,
                                   color: Color(0xFF8B5CF6)),
                               onPressed: () {
-                                // _authProvider.signInWithPhoneNumber(
-                                //   phoneNumber:
-                                //       //verify phone num
-                                //       '${_selectedCountry.phoneCode}${_phoneNumberController.text}',
-                                //   context: context,
-                                //);
+                                _authProvider.signInWithPhoneNumber(
+                                  phoneNumber:
+                                      //verify phone num
+                                      '${_selectedCountry.phoneCode}${_phoneNumberController.text}',
+                                  context: context,
+                                );
                               },
                             ),
                   ],

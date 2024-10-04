@@ -2,8 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:tpqms/src/authentication/phonenumber_verification_page.dart';
 import 'package:tpqms/src/utilities/assets_manager.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
+
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  double _opacity = 0.0; // Initial opacity is 0 (invisible)
+
+  @override
+  void initState() {
+    super.initState();
+    // Trigger the fade-in animation after a small delay
+    Future.delayed(Duration(seconds: 1), () {
+      setState(() {
+        _opacity = 1.0; // Change the opacity to 1 (fully visible)
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +79,18 @@ class LoginPage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Welcome to TPQMS!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                    AnimatedOpacity(
+                      opacity: _opacity,
+                      duration: Duration(seconds: 3),
+                      child: Container(
+                        child: Text(
+                          'Welcome to TPQMS!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                     SizedBox(height: 32),
@@ -106,6 +130,36 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    SizedBox(height: 16), // Add space between buttons
+                    OutlinedButton(
+                      onPressed: () {
+                        // TODO: Implement admin sign in logic
+                      },
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.admin_panel_settings,
+                              color: Color(0xFF8B5CF6)),
+                          SizedBox(width: 12),
+                          Text(
+                            'Sign in as Admin',
+                            style: TextStyle(
+                              color: Color(0xFF8B5CF6),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Color(0xFF8B5CF6),
+                        side: BorderSide(color: Color(0xFF8B5CF6)),
+                        minimumSize: Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -121,9 +175,9 @@ class CurvedBottomClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    path.lineTo(0, size.height - 50);
+    path.lineTo(0, size.height - 7);
     path.quadraticBezierTo(
-        size.width / 2, size.height, size.width, size.height - 200);
+        size.width / 2, size.height, size.width, size.height - 155);
     path.lineTo(size.width, 0);
     path.close();
     return path;
