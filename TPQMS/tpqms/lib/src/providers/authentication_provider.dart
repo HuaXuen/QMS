@@ -1,26 +1,32 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:tpqms/src/constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tpqms/src/common/constants.dart';
 import 'package:tpqms/src/model/user_model.dart';
-import 'package:tpqms/src/utilities/global_methods.dart';
+import 'package:tpqms/src/common/global_methods.dart';
+import 'package:tpqms/src/services/firestore_instance.dart';
 
 class AuthenticationProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSuccessful = false;
+  bool _hasAttemptedVerification = false;
   String? _uid;
   String? _phoneNumber;
   UserModel? _userModel;
 
   bool get isLoading => _isLoading;
   bool get isSuccessful => _isSuccessful;
+  bool get hasAttemptedVerification => _hasAttemptedVerification;
   String? get uid => _uid;
   String? get phonenumber => _phoneNumber;
   UserModel? get userModel => _userModel;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirestoreInstance().firestore;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   //check if user exists
@@ -43,7 +49,14 @@ class AuthenticationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  //save user data to firestore
+  //save user data to shared preferences
+  Future<void> saveUserDataToSharedPreferences() async {
+    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+    await sharedPreferences.setString(
+        Constants.userModel, jsonEncode(userModel!.toMap()));
+  }
+
+  //get data from shared preferences
 
   //sign in with phone number
   Future<void> signInWithPhoneNumber({
@@ -103,6 +116,7 @@ class AuthenticationProvider extends ChangeNotifier {
     required BuildContext context,
     required Function onSuccess,
   }) async {
+    _hasAttemptedVerification = true;
     _isLoading = true;
     notifyListeners();
 

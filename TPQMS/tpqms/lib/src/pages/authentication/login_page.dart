@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tpqms/src/authentication/phonenumber_verification_page.dart';
+import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
+import 'package:tpqms/src/pages/qr_scanner/qrscanner_page.dart';
 import 'package:tpqms/src/utilities/assets_manager.dart';
 
 class LoginPage extends StatefulWidget {
@@ -42,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
                       fit: BoxFit.cover,
                       image: AssetImage(AssetsManager.homeScreen),
                       colorFilter: ColorFilter.mode(
-                        Color(0xFF0E1320).withOpacity(0.7),
+                        Constants.primaryBackground.withOpacity(0.7),
                         BlendMode.srcOver,
                       ),
                     ),
@@ -55,7 +57,8 @@ class _LoginPageState extends State<LoginPage> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.white.withOpacity(0.1), // Glow color
+                            color:
+                                Constants.white.withOpacity(0.1), // Glow color
                             spreadRadius: 0.001, // How far the glow spreads
                             blurRadius: 30, // Softness of the glow
                             offset: Offset(0, 0), // Centered glow
@@ -65,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: Image.asset(
                         AssetsManager.tpqmsIcon,
                         fit: BoxFit.contain,
-                        color: Color(0xFF8B5CF6), // Purple accent color
+                        color: Constants.purple, // Purple accent color
                       ),
                     ),
                   ),
@@ -86,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Text(
                           'Welcome to TPQMS!',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Constants.white,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
@@ -107,12 +110,12 @@ class _LoginPageState extends State<LoginPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.phone_iphone, color: Colors.white),
+                          Icon(Icons.phone_iphone, color: Constants.white),
                           SizedBox(width: 12),
                           Text(
                             'Sign in with OTP',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Constants.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -120,9 +123,9 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: Constants.white,
                         backgroundColor:
-                            Color(0xFF8B5CF6), // Purple accent color
+                            Constants.purple, // Purple accent color
                         elevation: 0,
                         minimumSize: Size(double.infinity, 56),
                         shape: RoundedRectangleBorder(
@@ -139,12 +142,12 @@ class _LoginPageState extends State<LoginPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.admin_panel_settings,
-                              color: Color(0xFF8B5CF6)),
+                              color: Constants.purple),
                           SizedBox(width: 12),
                           Text(
                             'Sign in as Admin',
                             style: TextStyle(
-                              color: Color(0xFF8B5CF6),
+                              color: Constants.purple,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -152,8 +155,8 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Color(0xFF8B5CF6),
-                        side: BorderSide(color: Color(0xFF8B5CF6)),
+                        foregroundColor: Constants.purple,
+                        side: BorderSide(color: Constants.purple),
                         minimumSize: Size(double.infinity, 56),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28),

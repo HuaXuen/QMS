@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
-import 'package:tpqms/src/constants.dart';
+import 'package:tpqms/src/common/constants.dart';
 import 'package:tpqms/src/providers/authentication_provider.dart';
 
 class OTPPage extends StatefulWidget {
@@ -49,6 +49,17 @@ class _OTPScreenState extends State<OTPPage> {
         ),
       ),
     );
+
+    final errorPinTheme = defaultPinTheme.copyWith(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.red.shade100,
+        border: Border.all(
+          color: Colors.red,
+        ),
+      ),
+    );
+
     return Scaffold(
         resizeToAvoidBottomInset: true,
         body: SafeArea(
@@ -91,7 +102,12 @@ class _OTPScreenState extends State<OTPPage> {
                         length: 6,
                         controller: controller,
                         focusNode: focusNode,
-                        defaultPinTheme: defaultPinTheme,
+                        defaultPinTheme:
+                            _authProvider.hasAttemptedVerification &&
+                                    !_authProvider.isSuccessful &&
+                                    !_authProvider.isLoading
+                                ? errorPinTheme
+                                : defaultPinTheme,
                         onCompleted: (pin) {
                           setState(() {
                             otpCode = pin;
@@ -139,8 +155,25 @@ class _OTPScreenState extends State<OTPPage> {
                           ),
                           child: const Icon(
                             Icons.done,
-                            color: Colors.white,
+                            color: Constants.white,
                             size: 30,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                  _authProvider.hasAttemptedVerification &&
+                          !_authProvider.isSuccessful &&
+                          !_authProvider.isLoading
+                      ? SizedBox(
+                          height: 60,
+                          child: Container(
+                            child: const Text(
+                              "Incorrect OTP",
+                              style: TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -184,7 +217,6 @@ class _OTPScreenState extends State<OTPPage> {
           if (userExists) {
             //get info from firestore
             await authProvider.getUserData();
-
             //navigate to home screen
             navigate(userExists: true);
           } else {
@@ -198,7 +230,7 @@ class _OTPScreenState extends State<OTPPage> {
     if (userExists) {
       Navigator.pushNamedAndRemoveUntil(
         context,
-        Constants.homePage,
+        Constants.qrscannerPage,
         (route) => false,
       );
     } else {

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:tpqms/src/authentication/otp_page.dart';
-import 'package:tpqms/src/authentication/phonenumber_verification_page.dart';
-import 'package:tpqms/src/constants.dart';
+import 'package:tpqms/src/pages/authentication/otp_page.dart';
+import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
+import 'package:tpqms/src/common/constants.dart';
 import 'package:tpqms/src/pages/loading_screen.dart';
-import 'package:tpqms/src/pages/home_page.dart';
+import 'package:tpqms/src/pages/landing_page/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:tpqms/src/pages/login_page.dart';
+import 'package:tpqms/src/pages/authentication/login_page.dart';
+import 'package:tpqms/src/pages/qr_scanner/qrscanner_page.dart';
 import 'package:tpqms/src/providers/authentication_provider.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -47,12 +48,14 @@ class MyApp extends StatelessWidget {
         //   colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         //   useMaterial3: true,
         // ),
-        initialRoute: Constants.loginPage,
+        initialRoute: Constants.loadingScreen,
         routes: {
+          Constants.loadingScreen: (context) => const LoadingScreen(),
           Constants.loginPage: (context) => const LoginPage(),
           Constants.PhoneNumberVerificationPage: (context) =>
               const PhoneNumberVerificationPage(),
           Constants.otpPage: (context) => const OTPPage(),
+          Constants.qrscannerPage: (context) => const QrScannerPage(),
           Constants.homePage: (context) => const HomePage(),
         });
   }

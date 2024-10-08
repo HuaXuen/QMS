@@ -1,7 +1,8 @@
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/material.dart';
-import 'package:tpqms/src/pages/login_page.dart';
+import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/src/pages/authentication/login_page.dart';
 import 'package:tpqms/src/utilities/assets_manager.dart';
 
 class LoadingScreen extends StatelessWidget {
@@ -20,14 +21,15 @@ class LoadingScreen extends StatelessWidget {
           const Text(
             "Loading...",
             style: TextStyle(
-              fontSize: 20, // Adjust font size as needed
-              color: Colors.black, // Adjust color as needed
+              color: Constants.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold, // Adjust color as needed
             ),
           ),
         ],
       ),
       splashIconSize: 400, // Adjust the size of the splash area as needed
-      backgroundColor: Colors.white,
+      backgroundColor: Constants.primaryBackground,
       nextScreen: const LoginPage(),
     );
   }
