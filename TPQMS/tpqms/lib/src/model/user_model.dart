@@ -1,9 +1,9 @@
-import 'package:tpqms/src/constants.dart';
+import 'package:tpqms/src/common/constants.dart';
 
 class UserModel {
-  String uid;
-  String name;
-  String phoneNumber;
+  final String uid;
+  final String name;
+  final String phoneNumber;
 
   UserModel({
     required this.uid,

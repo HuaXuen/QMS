@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:tpqms/src/common/constants.dart';
 import 'package:tpqms/src/providers/authentication_provider.dart';
 import 'package:tpqms/src/utilities/assets_manager.dart';
 import 'package:country_picker/country_picker.dart';
@@ -12,10 +13,10 @@ class PhoneNumberVerificationPage extends StatefulWidget {
 
   @override
   State<PhoneNumberVerificationPage> createState() =>
-      _PhoneNumberVerification();
+      _PhoneNumberVerificationState();
 }
 
-class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
+class _PhoneNumberVerificationState extends State<PhoneNumberVerificationPage> {
   final TextEditingController _phoneNumberController = TextEditingController();
 
   Country _selectedCountry = Country(
@@ -41,25 +42,21 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
   Widget build(BuildContext context) {
     final _authProvider = context.watch<AuthenticationProvider>();
     //final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
     return Scaffold(
-      backgroundColor: Color(0xFF0E1320),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF0E1320),
-        elevation: 0,
-      ),
+      resizeToAvoidBottomInset: true,
+      backgroundColor: Constants.primaryBackground,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 1),
+              SizedBox(height: 70),
               Center(
                 child: Image.asset(
                   AssetsManager.tpqmsIcon,
                   height: 250,
-                  color: Color(0xFF8B5CF6),
+                  color: Constants.purple,
                 ),
               ),
               Text(
@@ -86,7 +83,8 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
                           showPhoneCode: true,
                           countryListTheme: CountryListThemeData(
                             backgroundColor: Color(0xFF1A2235),
-                            textStyle: GoogleFonts.inter(color: Colors.white),
+                            textStyle:
+                                GoogleFonts.inter(color: Constants.white),
                             bottomSheetHeight: 500,
                             borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(12),
@@ -107,7 +105,7 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
                           '${_selectedCountry.flagEmoji} ${_selectedCountry.phoneCode}',
                           style: GoogleFonts.inter(
                             fontSize: 16,
-                            color: Colors.white,
+                            color: Constants.white,
                           ),
                         ),
                       ),
@@ -121,7 +119,7 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
                         ],
                         keyboardType: TextInputType.number,
                         textInputAction: TextInputAction.done,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: GoogleFonts.inter(color: Constants.white),
                         decoration: InputDecoration(
                           hintText: 'Phone Number',
                           hintStyle: GoogleFonts.inter(color: Colors.white54),
@@ -144,20 +142,20 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                      Color(0xFF8B5CF6)),
+                                      Constants.purple),
                                 ),
                               ),
                             )
                           : IconButton(
                               icon: Icon(Icons.arrow_forward,
-                                  color: Color(0xFF8B5CF6)),
+                                  color: Constants.purple),
                               onPressed: () {
-                                // _authProvider.signInWithPhoneNumber(
-                                //   phoneNumber:
-                                //       //verify phone num
-                                //       '${_selectedCountry.phoneCode}${_phoneNumberController.text}',
-                                //   context: context,
-                                //);
+                                _authProvider.signInWithPhoneNumber(
+                                  phoneNumber:
+                                      //verify phone num
+                                      '${_selectedCountry.phoneCode}${_phoneNumberController.text}',
+                                  context: context,
+                                );
                               },
                             ),
                   ],
@@ -170,8 +168,7 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
                 child: ElevatedButton(
                   onPressed: _phoneNumberController.text.length > 8
                       ? () {
-                          print("passed 1st");
-
+                          //print("passed 1st");
                           _authProvider.signInWithPhoneNumber(
                             //verify phone num
                             phoneNumber:
@@ -188,8 +185,8 @@ class _PhoneNumberVerification extends State<PhoneNumberVerificationPage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: Color(0xFF8B5CF6),
+                    foregroundColor: Constants.white,
+                    backgroundColor: Constants.purple,
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
