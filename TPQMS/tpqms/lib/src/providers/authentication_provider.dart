@@ -2,20 +2,24 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tpqms/src/common/constants.dart';
 import 'package:tpqms/src/model/user_model.dart';
 import 'package:tpqms/src/common/global_methods.dart';
-import 'package:tpqms/src/services/firestore_instance.dart';
+import 'package:tpqms/src/services/firestore_service.dart';
 
 class AuthenticationProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isSuccessful = false;
   bool _hasAttemptedVerification = false;
   String? _uid;
+  String? _name;
   String? _phoneNumber;
+  String? _age;
+  String? _height;
   UserModel? _userModel;
 
   bool get isLoading => _isLoading;
@@ -26,16 +30,23 @@ class AuthenticationProvider extends ChangeNotifier {
   UserModel? get userModel => _userModel;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirestoreInstance().firestore;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirestoreService _firestoreService = FirestoreService();
   final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  get currentUser => null;
 
   //check if user exists
   Future<bool> checkUserExists() async {
     DocumentSnapshot documentSnapshot =
         await _firestore.collection(Constants.users).doc(_uid).get();
     if (documentSnapshot.exists) {
+      print('User document found in Firestore: ${documentSnapshot.data()}');
+
       return true;
     } else {
+      print('User document not found in Firestore.');
+
       return false;
     }
   }
@@ -43,7 +54,7 @@ class AuthenticationProvider extends ChangeNotifier {
   //get user data from firestore
   Future<void> getUserData() async {
     DocumentSnapshot documentSnapshot =
-        await _firestore.collection(Constants.users).doc(_uid).get();
+        await _firestoreService.getDocument(Constants.users, _uid!);
     _userModel =
         UserModel.fromMap(documentSnapshot.data() as Map<String, dynamic>);
     notifyListeners();
@@ -65,19 +76,19 @@ class AuthenticationProvider extends ChangeNotifier {
   }) async {
     _isLoading = true;
     notifyListeners();
-    print('Before await');
+    print('Before calling verifyPhoneNumber');
 
     try {
       await _auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          print('Verification completed');
+          print('Verification completed with credential: $credential');
           await _auth.signInWithCredential(credential).then((value) async {
-            _uid = value.user!.uid;
-            _phoneNumber = value.user!.phoneNumber;
+            _uid = value.user?.uid;
+            _phoneNumber = value.user?.phoneNumber;
+
             _isSuccessful = true;
             _isLoading = false;
-            print("Verifying......");
             notifyListeners();
           });
         },
@@ -89,20 +100,24 @@ class AuthenticationProvider extends ChangeNotifier {
           showSnackBar(context, e.toString());
         },
         codeSent: (String verificationId, int? resendToken) async {
-          print('Code sent');
+          print('Code sent. Verification ID: $verificationId');
           _isLoading = false;
           notifyListeners();
-          Navigator.of(context).pushNamed(Constants.otpPage, arguments: {
-            Constants.verificationId: verificationId,
-            Constants.phoneNumber: phoneNumber,
-          });
+
+          Navigator.of(context).pushNamed(
+            Constants.OtpPage,
+            arguments: {
+              Constants.verificationId: verificationId,
+              Constants.phoneNumber: phoneNumber,
+            },
+          );
         },
         codeAutoRetrievalTimeout: (String verificationId) {
-          print('Code auto retrieval timeout');
+          print('Code auto-retrieval timeout: $verificationId');
         },
       );
     } catch (e) {
-      print('Error in signInWithPhoneNumber: $e');
+      print('Error during signInWithPhoneNumber: $e');
       _isLoading = false;
       notifyListeners();
       showSnackBar(context, e.toString());
@@ -114,8 +129,10 @@ class AuthenticationProvider extends ChangeNotifier {
     required String verificationId,
     required String otpCode,
     required BuildContext context,
-    required Function onSuccess,
+    //required Function onSuccess,
   }) async {
+    print('Attempting to verify OTP');
+
     _hasAttemptedVerification = true;
     _isLoading = true;
     notifyListeners();
@@ -128,9 +145,34 @@ class AuthenticationProvider extends ChangeNotifier {
     await _auth.signInWithCredential(credential).then((value) async {
       _uid = value.user!.uid;
       _phoneNumber = value.user!.phoneNumber;
+      print('OTP verified successfully. User signed in.');
+
+      print('UID assigned: $_uid');
+      print('Phone number assigned: $_phoneNumber');
+      bool userExists = await checkUserExists();
+      if (userExists) {
+        //get info from firestore
+        await getUserData();
+        //navigate to home screen
+        navigate(
+          userExists: true,
+          context: context,
+          uid: uid!,
+          phoneNumber: '$_phoneNumber',
+        );
+      } else {
+        print('uID assigned: $_uid');
+        print('Phone number assigned: $_phoneNumber');
+        navigate(
+          userExists: false,
+          context: context,
+          uid: uid!,
+          phoneNumber: '$_phoneNumber',
+        );
+      }
       _isSuccessful = true;
       _isLoading = false;
-      onSuccess();
+      //onSuccess();
       notifyListeners();
     }).catchError((e) {
       _isSuccessful = false;
@@ -139,4 +181,29 @@ class AuthenticationProvider extends ChangeNotifier {
       showSnackBar(context, e.toString());
     });
   }
+
+  void navigate({
+    required bool userExists,
+    required BuildContext context,
+    required String uid,
+    required String phoneNumber,
+  }) {
+    //navigate to home screen
+    if (userExists) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        Constants.HomePage,
+        (route) => false,
+      );
+    } else {
+      //navigate to
+      Navigator.of(context)
+          .pushReplacementNamed(Constants.UserInformationPage, arguments: {
+        Constants.uid: uid,
+        Constants.phoneNumber: phoneNumber,
+      });
+    }
+  }
+
+  //void saveUserDataToFirestore({required UserModel userModel})
 }

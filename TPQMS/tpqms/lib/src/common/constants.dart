@@ -2,17 +2,21 @@ import 'dart:ui';
 
 class Constants {
   //screen routes
-  static const String loadingScreen = '/loadingScreen';
-  static const String loginPage = '/loginPage';
+  static const String LoadingScreen = '/loadingScreen';
+  static const String LoginPage = '/loginPage';
   static const String PhoneNumberVerificationPage =
       '/phoneNumberVerificationPage';
-  static const String otpPage = '/otpPage';
-  static const String homePage = '/homePage';
-  static const String qrscannerPage = '/qrscannerPage';
+  static const String OtpPage = '/otpPage';
+  static const String HomePage = '/homePage';
+  static const String QrScannerPage = '/qrscannerPage';
+  static const String UserInformationPage = '/userInformationPage';
 
   static const String uid = 'uid';
   static const String name = 'name';
   static const String phoneNumber = 'phoneNumber';
+  static const String age = 'age';
+  static const String height = 'height';
+
   static const String image = 'image';
   static const String token = 'token';
   static const String validTicket = 'validTicket';

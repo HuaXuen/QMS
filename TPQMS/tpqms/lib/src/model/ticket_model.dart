@@ -17,15 +17,15 @@ class TicketModel {
     required this.price,
   });
 
-  // Map<String, dynamic> toMap() {
-  //   return {
-  //     'ticketId': ticketId,
-  //     'userId': userId,
-  //     'purchaseTime': Timestamp.fromDate(purchaseTime),
-  //     'expirationTime': Timestamp.fromDate(expirationTime),
-  //     'isValid': isValid,
-  //   };
-  // }
+  Map<String, dynamic> toMap() {
+    return {
+      'ticketId': ticketId,
+      'userId': userId,
+      'purchaseTime': Timestamp.fromDate(purchaseTime),
+      'expirationTime': Timestamp.fromDate(expirationTime),
+      'isValid': isValid,
+    };
+  }
 
   factory TicketModel.fromMap(String id, Map<String, dynamic> map) {
     return TicketModel(

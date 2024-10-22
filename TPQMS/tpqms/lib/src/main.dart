@@ -4,12 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:tpqms/src/pages/authentication/otp_page.dart';
 import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
 import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/src/pages/authentication/userinformation_page.dart';
 import 'package:tpqms/src/pages/loading_screen.dart';
 import 'package:tpqms/src/pages/landing_page/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tpqms/src/pages/authentication/login_page.dart';
 import 'package:tpqms/src/pages/qr_scanner/qrscanner_page.dart';
 import 'package:tpqms/src/providers/authentication_provider.dart';
+import 'package:tpqms/src/providers/userinfo_provider.dart';
 import 'firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tpqms/src/pages/loading_screen.dart';
@@ -26,8 +28,8 @@ void main() async {
   );
 
   runApp(MultiProvider(providers: [
-    //ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
     ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
+    ChangeNotifierProvider(create: (_) => UserInfoProvider()),
   ], child: MyApp()));
 }
 
@@ -48,15 +50,17 @@ class MyApp extends StatelessWidget {
         //   colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         //   useMaterial3: true,
         // ),
-        initialRoute: Constants.loadingScreen,
+        initialRoute: Constants.LoadingScreen,
         routes: {
-          Constants.loadingScreen: (context) => const LoadingScreen(),
-          Constants.loginPage: (context) => const LoginPage(),
+          Constants.LoadingScreen: (context) => const LoadingScreen(),
+          Constants.LoginPage: (context) => const LoginPage(),
           Constants.PhoneNumberVerificationPage: (context) =>
               const PhoneNumberVerificationPage(),
-          Constants.otpPage: (context) => const OTPPage(),
-          Constants.qrscannerPage: (context) => const QrScannerPage(),
-          Constants.homePage: (context) => const HomePage(),
+          Constants.OtpPage: (context) => const OTPPage(),
+          Constants.QrScannerPage: (context) => const QrScannerPage(),
+          Constants.HomePage: (context) => const HomePage(),
+          Constants.UserInformationPage: (context) =>
+              const UserInformationPage(),
         });
   }
 }

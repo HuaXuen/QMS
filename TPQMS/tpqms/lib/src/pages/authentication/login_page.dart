@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/src/common/reusable_widget.dart';
 import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
 import 'package:tpqms/src/pages/qr_scanner/qrscanner_page.dart';
 import 'package:tpqms/src/utilities/assets_manager.dart';
@@ -97,7 +98,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     SizedBox(height: 32),
-                    ElevatedButton(
+                    CustomElevatedButtonwithIcon(
+                      text: 'Sign in with OTP',
+                      icon: Icons.phone_iphone,
                       onPressed: () {
                         Navigator.pushReplacement(
                           context,
@@ -107,61 +110,17 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         );
                       },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.phone_iphone, color: Constants.white),
-                          SizedBox(width: 12),
-                          Text(
-                            'Sign in with OTP',
-                            style: TextStyle(
-                              color: Constants.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Constants.white,
-                        backgroundColor:
-                            Constants.purple, // Purple accent color
-                        elevation: 0,
-                        minimumSize: Size(double.infinity, 56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                      ),
+                      backgroundColor: Constants.purple,
+                      foregroundColor: Constants.white,
                     ),
                     SizedBox(height: 16), // Add space between buttons
-                    OutlinedButton(
+                    CustomOutlinedButtonwithIcon(
+                      text: 'Sign in as Admin',
+                      icon: Icons.admin_panel_settings,
                       onPressed: () {
                         // TODO: Implement admin sign in logic
                       },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.admin_panel_settings,
-                              color: Constants.purple),
-                          SizedBox(width: 12),
-                          Text(
-                            'Sign in as Admin',
-                            style: TextStyle(
-                              color: Constants.purple,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Constants.purple,
-                        side: BorderSide(color: Constants.purple),
-                        minimumSize: Size(double.infinity, 56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                      ),
+                      primaryColor: Constants.purple,
                     ),
                   ],
                 ),
