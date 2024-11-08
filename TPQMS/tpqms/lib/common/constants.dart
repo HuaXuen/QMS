@@ -10,7 +10,10 @@ class Constants {
   static const String HomePage = '/homePage';
   static const String QrScannerPage = '/qrscannerPage';
   static const String UserInformationPage = '/userInformationPage';
+  static const String AdminLoginPage = '/adminLoginPage';
+  static const String RideManagementPage = '/ridemManagementPage';
 
+// constant variables
   static const String uid = 'uid';
   static const String name = 'name';
   static const String phoneNumber = 'phoneNumber';
@@ -28,6 +31,10 @@ class Constants {
 //colours
   static const Color primaryBackground = Color(0xFF0E1320);
   static const Color secondaryBackground = Color(0xFF1A2235);
+  static const Color homeBackground = Color(0xFF1A1A1A);
   static const Color purple = Color(0xFF8B5CF6);
   static const Color white = Color.fromARGB(255, 255, 255, 255);
+
+//db routes
+  static const String ridesDbRoute = 'rides';
 }

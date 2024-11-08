@@ -6,10 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/src/model/user_model.dart';
-import 'package:tpqms/src/common/global_methods.dart';
-import 'package:tpqms/src/services/firestore_service.dart';
+import 'package:tpqms/common/global_methods.dart';
+import 'package:tpqms/src/providers/common_providers/navigation.dart';
+import 'package:tpqms/services/firestore_service.dart';
 
 class AuthenticationProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -33,6 +34,7 @@ class AuthenticationProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final Navigation navigation = Navigation();
 
   get currentUser => null;
 
@@ -154,7 +156,7 @@ class AuthenticationProvider extends ChangeNotifier {
         //get info from firestore
         await getUserData();
         //navigate to home screen
-        navigate(
+        navigation.handleUserLoginNavigation(
           userExists: true,
           context: context,
           uid: uid!,
@@ -163,7 +165,7 @@ class AuthenticationProvider extends ChangeNotifier {
       } else {
         print('uID assigned: $_uid');
         print('Phone number assigned: $_phoneNumber');
-        navigate(
+        navigation.handleUserLoginNavigation(
           userExists: false,
           context: context,
           uid: uid!,
@@ -180,29 +182,6 @@ class AuthenticationProvider extends ChangeNotifier {
       notifyListeners();
       showSnackBar(context, e.toString());
     });
-  }
-
-  void navigate({
-    required bool userExists,
-    required BuildContext context,
-    required String uid,
-    required String phoneNumber,
-  }) {
-    //navigate to home screen
-    if (userExists) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        Constants.HomePage,
-        (route) => false,
-      );
-    } else {
-      //navigate to
-      Navigator.of(context)
-          .pushReplacementNamed(Constants.UserInformationPage, arguments: {
-        Constants.uid: uid,
-        Constants.phoneNumber: phoneNumber,
-      });
-    }
   }
 
   //void saveUserDataToFirestore({required UserModel userModel})

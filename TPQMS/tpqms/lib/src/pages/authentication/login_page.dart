@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tpqms/src/common/constants.dart';
-import 'package:tpqms/src/common/reusable_widget.dart';
+import 'package:tpqms/common/constants.dart';
+import 'package:tpqms/common/resuable_widgets/reusable_buttons.dart';
 import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
-import 'package:tpqms/src/pages/qr_scanner/qrscanner_page.dart';
-import 'package:tpqms/src/utilities/assets_manager.dart';
+import 'package:tpqms/src/pages/users/qr_scanner/qrscanner_page.dart';
+import 'package:tpqms/utilities/assets_manager.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);

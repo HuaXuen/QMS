@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:tpqms/services/ride_service.dart';
+import 'package:tpqms/src/pages/authentication/adminverification_page.dart';
 import 'package:tpqms/src/pages/authentication/otp_page.dart';
 import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
-import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/src/pages/authentication/userinformation_page.dart';
 import 'package:tpqms/src/pages/loading_screen.dart';
-import 'package:tpqms/src/pages/landing_page/home_page.dart';
+import 'package:tpqms/src/pages/users/landing_page/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tpqms/src/pages/authentication/login_page.dart';
-import 'package:tpqms/src/pages/qr_scanner/qrscanner_page.dart';
-import 'package:tpqms/src/providers/authentication_provider.dart';
-import 'package:tpqms/src/providers/userinfo_provider.dart';
-import 'firebase_options.dart';
+import 'package:tpqms/src/pages/users/qr_scanner/qrscanner_page.dart';
+import 'package:tpqms/src/pages/admin/ride_management/ridemanagement_page.dart';
+import 'package:tpqms/src/providers/auth_providers/authentication_provider.dart';
+import 'package:tpqms/src/providers/auth_providers/userinfo_provider.dart';
+import 'package:tpqms/src/providers/ride_provider.dart';
+import 'package:tpqms/services/realtimedb_service.dart';
+import 'src/firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tpqms/src/pages/loading_screen.dart';
 
@@ -26,10 +31,15 @@ void main() async {
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
   );
-
+  final RealtimeDbService _dbService = RealtimeDbService();
+  final RideService _rideService = RideService(_dbService);
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
     ChangeNotifierProvider(create: (_) => UserInfoProvider()),
+    ChangeNotifierProvider(
+      create: (_) => RideProvider(_rideService),
+      lazy: false,
+    ),
   ], child: MyApp()));
 }
 
@@ -45,15 +55,11 @@ class MyApp extends StatelessWidget {
     ]);
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        // title: 'Flutter TPQMS',
-        // theme: ThemeData(
-        //   colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        //   useMaterial3: true,
-        // ),
-        initialRoute: Constants.LoadingScreen,
+        initialRoute: Constants.HomePage,
         routes: {
           Constants.LoadingScreen: (context) => const LoadingScreen(),
           Constants.LoginPage: (context) => const LoginPage(),
+          Constants.AdminLoginPage: (context) => const AdminLoginPage(),
           Constants.PhoneNumberVerificationPage: (context) =>
               const PhoneNumberVerificationPage(),
           Constants.OtpPage: (context) => const OTPPage(),
@@ -61,6 +67,7 @@ class MyApp extends StatelessWidget {
           Constants.HomePage: (context) => const HomePage(),
           Constants.UserInformationPage: (context) =>
               const UserInformationPage(),
+          Constants.RideManagementPage: (context) => const RideManagementPage(),
         });
   }
 }

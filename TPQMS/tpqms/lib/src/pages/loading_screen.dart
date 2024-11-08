@@ -1,9 +1,9 @@
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter/material.dart';
-import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/src/pages/authentication/login_page.dart';
-import 'package:tpqms/src/utilities/assets_manager.dart';
+import 'package:tpqms/utilities/assets_manager.dart';
 
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});

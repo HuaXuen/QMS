@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tpqms/src/model/ticket_model.dart';
-import 'package:tpqms/src/services/firestore_service.dart';
+import 'package:tpqms/services/firestore_service.dart';
 
 class TicketService {
   final FirestoreService _firestoreService;

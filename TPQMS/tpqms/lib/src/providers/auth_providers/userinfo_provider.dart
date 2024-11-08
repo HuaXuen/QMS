@@ -1,9 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:tpqms/src/common/constants.dart';
-import 'package:tpqms/src/common/global_methods.dart';
+import 'package:tpqms/common/constants.dart';
+import 'package:tpqms/common/global_methods.dart';
 import 'package:tpqms/src/model/user_model.dart';
-import 'package:tpqms/src/services/firestore_service.dart';
+import 'package:tpqms/services/firestore_service.dart';
 
 class UserInfoProvider extends ChangeNotifier {
   String? _uid;

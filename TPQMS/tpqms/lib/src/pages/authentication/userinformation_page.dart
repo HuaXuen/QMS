@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:tpqms/src/common/constants.dart';
-import 'package:tpqms/src/common/reusable_widget.dart';
-import 'package:tpqms/src/providers/userinfo_provider.dart';
-import 'package:tpqms/src/utilities/assets_manager.dart';
+import 'package:tpqms/common/constants.dart';
+import 'package:tpqms/common/resuable_widgets/reusable_buttons.dart';
+import 'package:tpqms/common/resuable_widgets/reusable_textfield.dart';
+import 'package:tpqms/src/providers/auth_providers/userinfo_provider.dart';
+import 'package:tpqms/utilities/assets_manager.dart';
 
 class UserInformationPage extends StatefulWidget {
   const UserInformationPage({Key? key}) : super(key: key);
@@ -121,7 +122,12 @@ class _UserInformationPageState extends State<UserInformationPage> {
                     },
                   ),
                   const SizedBox(height: 32),
-                  CustomElevatedButton(text: "Confirm", onPressed: _submitForm)
+                  CustomElevatedButton(
+                    text: "Confirm",
+                    onPressed: _submitForm,
+                    backgroundColor: Constants.purple,
+                    foregroundColor: Constants.white,
+                  )
                 ],
               ),
             ),

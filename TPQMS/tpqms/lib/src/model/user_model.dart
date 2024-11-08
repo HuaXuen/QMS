@@ -1,4 +1,4 @@
-import 'package:tpqms/src/common/constants.dart';
+import 'package:tpqms/common/constants.dart';
 
 class UserModel {
   final String uid;

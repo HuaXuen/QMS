@@ -2,9 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:tpqms/src/common/constants.dart';
-import 'package:tpqms/src/providers/authentication_provider.dart';
-import 'package:tpqms/src/utilities/assets_manager.dart';
+import 'package:tpqms/common/constants.dart';
+import 'package:tpqms/src/providers/auth_providers/authentication_provider.dart';
+import 'package:tpqms/utilities/assets_manager.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
-import 'package:tpqms/src/common/constants.dart';
-import 'package:tpqms/src/providers/authentication_provider.dart';
+import 'package:tpqms/common/constants.dart';
+import 'package:tpqms/src/providers/auth_providers/authentication_provider.dart';
 
 class OTPPage extends StatefulWidget {
   const OTPPage({super.key});
