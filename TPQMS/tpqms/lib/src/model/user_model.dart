@@ -6,6 +6,7 @@ class UserModel {
   final String phoneNumber;
   final String age;
   final String height;
+  final bool isOnline;
 
   UserModel({
     required this.uid,
@@ -13,6 +14,7 @@ class UserModel {
     required this.phoneNumber,
     required this.age,
     required this.height,
+    required this.isOnline,
   });
 
 //from map
@@ -23,6 +25,7 @@ class UserModel {
       phoneNumber: map[Constants.phoneNumber] ?? '',
       age: map[Constants.age] ?? '',
       height: map[Constants.height] ?? '',
+      isOnline: map[Constants.isOnline] ?? true,
     );
   }
 
@@ -34,6 +37,7 @@ class UserModel {
       'phoneNumber': phoneNumber,
       'age': age,
       'height': height,
+      'isOnline': isOnline,
     };
   }
 }

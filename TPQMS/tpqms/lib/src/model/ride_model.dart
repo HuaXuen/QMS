@@ -1,18 +1,20 @@
 class RideModel {
-  //final String id;
   final String name;
   final String category;
   final String status;
   final int heightRequirement;
   final int queueTime;
+  final int numOfRidersAllowed;
+  final String currentBatchId;
 
   RideModel({
-    //required this.id,
     required this.name,
     required this.category,
     required this.status,
     required this.heightRequirement,
     required this.queueTime,
+    required this.numOfRidersAllowed,
+    required this.currentBatchId,
   });
   @override
   String toString() {
@@ -21,23 +23,24 @@ class RideModel {
 
   Map<String, dynamic> toMap() {
     return {
-      // 'id': id,
       'name': name,
       'category': category,
       'status': status,
       'heightRequirement': heightRequirement,
       'queueTime': queueTime,
+      'numOfRidersAllowed': numOfRidersAllowed,
     };
   }
 
   factory RideModel.fromMap(String id, Map<String, dynamic> map) {
     return RideModel(
-      //id: id,
       name: map['name'] ?? '',
       category: map['category'] ?? '',
       status: map['status'] ?? '',
       heightRequirement: map['heightRequirement'] ?? 0,
       queueTime: map['queueTime'] ?? 0,
+      numOfRidersAllowed: map['numOfRidersAllowed'] ?? 0,
+      currentBatchId: map['currentBatchId'] ?? '',
     );
   }
 }

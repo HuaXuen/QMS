@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_scanner_overlay/qr_scanner_overlay.dart';
 import 'package:tpqms/common/constants.dart';
-import 'package:tpqms/src/providers/qrscanner_provider.dart';
+import 'package:tpqms/src/providers/user_providers/qrscanner_provider.dart';
 
 class QrScannerPage extends StatefulWidget {
   const QrScannerPage({Key? key}) : super(key: key);

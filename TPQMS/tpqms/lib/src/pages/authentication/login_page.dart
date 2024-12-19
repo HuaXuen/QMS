@@ -99,7 +99,17 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     SizedBox(height: 32),
                     CustomElevatedButtonwithIcon(
-                      text: 'Sign in with OTP',
+                      text: 'Log In',
+                      icon: Icons.login,
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      backgroundColor: Constants.purple,
+                      foregroundColor: Constants.white,
+                    ),
+                    SizedBox(height: 16),
+                    CustomElevatedButtonwithIcon(
+                      text: 'Sign up with Phone Number',
                       icon: Icons.phone_iphone,
                       onPressed: () {
                         Navigator.pushReplacement(

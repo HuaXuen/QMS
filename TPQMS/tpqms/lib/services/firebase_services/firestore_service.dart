@@ -36,6 +36,17 @@ class FirestoreService {
     }
     return query.snapshots();
   }
+
+  Future<QuerySnapshot> queryDocuments(
+      String collection, List<QueryFilter>? filters) async {
+    Query query = _firestore.collection(collection);
+    if (filters != null) {
+      for (var filter in filters) {
+        query = query.where(filter.field, isEqualTo: filter.value);
+      }
+    }
+    return query.get(); // Returns Future<QuerySnapshot> directly
+  }
 }
 
 class QueryFilter {

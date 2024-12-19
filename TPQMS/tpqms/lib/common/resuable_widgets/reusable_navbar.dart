@@ -55,11 +55,11 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
       child: Container(
         height: widget.height,
         decoration: BoxDecoration(
-          color: Color(0xFF1A1A1A),
+          color: Colors.grey[850],
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Constants.black.withOpacity(0.3),
               blurRadius: 10,
               spreadRadius: 1,
             ),

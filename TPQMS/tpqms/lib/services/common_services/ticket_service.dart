@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tpqms/src/model/ticket_model.dart';
-import 'package:tpqms/services/firestore_service.dart';
+import 'package:tpqms/services/firebase_services/firestore_service.dart';
 
 class TicketService {
   final FirestoreService _firestoreService;
@@ -11,6 +11,29 @@ class TicketService {
   Future<void> addTicket(TicketModel ticket) async {
     await _firestoreService.addDocument(
         _collection, ticket.ticketId, ticket.toMap());
+  }
+
+  List<String> generateChildrenIds(int numOfChildren, String parentId) {
+    List<String> childrenIds = List.generate(numOfChildren, (index) {
+      return '$parentId-child${index + 1}'; // Concatenate parentId with child index
+    });
+    return childrenIds;
+  }
+
+  Future<void> updateChildId(
+      String ticketId, String childId, Map<String, dynamic> childData) async {
+    try {
+      // Access the children sub-collection under the specified ticket
+      await _firestoreService.addDocument(
+        'tickets/$ticketId/children', // Path to the children sub-collection
+        childId, // Document ID for the child
+        childData, // Data for the child document
+      );
+      print('Child document updated successfully: $childId');
+    } catch (e) {
+      print('Error updating child document: $e');
+      rethrow;
+    }
   }
 
   Future<TicketModel?> getTicket(String ticketId) async {

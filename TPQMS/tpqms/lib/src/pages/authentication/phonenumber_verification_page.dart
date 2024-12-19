@@ -54,11 +54,12 @@ class _PhoneNumberVerificationState extends State<PhoneNumberVerificationPage> {
               SizedBox(height: 70),
               Center(
                 child: Image.asset(
-                  AssetsManager.tpqmsIcon,
+                  AssetsManager.authBanner,
                   height: 250,
-                  color: Constants.purple,
+                  //color: Constants.purple,
                 ),
               ),
+              Padding(padding: const EdgeInsets.all(24.0)),
               Text(
                 "Please enter your phone number and wait for an OTP number",
                 textAlign: TextAlign.center,
@@ -113,7 +114,7 @@ class _PhoneNumberVerificationState extends State<PhoneNumberVerificationPage> {
                     Expanded(
                       child: TextFormField(
                         controller: _phoneNumberController,
-                        maxLength: 9,
+                        maxLength: 10,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly
                         ],
@@ -135,10 +136,10 @@ class _PhoneNumberVerificationState extends State<PhoneNumberVerificationPage> {
                     if (_phoneNumberController.text.length > 8)
                       _authProvider.isLoading
                           ? Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(10.0),
                               child: SizedBox(
-                                width: 24,
-                                height: 24,
+                                width: 20,
+                                height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(

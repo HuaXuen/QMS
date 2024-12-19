@@ -16,8 +16,6 @@ class CustomElevatedButtonwithIcon extends StatelessWidget {
     required this.onPressed,
     required this.backgroundColor,
     required this.foregroundColor,
-    // this.backgroundColor = Constants.purple, // Default purple
-    // this.foregroundColor = Constants.white,
   }) : super(key: key);
 
   @override
@@ -36,17 +34,23 @@ class CustomElevatedButtonwithIcon extends StatelessWidget {
             ),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(icon, color: foregroundColor),
-              SizedBox(width: 12),
-              Text(
-                text,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: foregroundColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.only(left: 1.0), // Adjust the padding
+                child: Icon(icon, color: foregroundColor),
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: foregroundColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -69,8 +73,6 @@ class CustomOutlinedButtonwithIcon extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     required this.primaryColor,
-
-    //this.primaryColor = Constants.purple // Default purple
   }) : super(key: key);
 
   @override
@@ -86,16 +88,22 @@ class CustomOutlinedButtonwithIcon extends StatelessWidget {
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: primaryColor),
-          SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              color: primaryColor,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.only(left: 1.0), // Adjust the padding
+            child: Icon(icon, color: primaryColor),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: primaryColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
         ],

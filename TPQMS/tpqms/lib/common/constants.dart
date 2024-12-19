@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:flutter/material.dart';
+
 class Constants {
   //screen routes
   static const String LoadingScreen = '/loadingScreen';
@@ -19,6 +21,7 @@ class Constants {
   static const String phoneNumber = 'phoneNumber';
   static const String age = 'age';
   static const String height = 'height';
+  static const String isOnline = 'isOnline';
 
   static const String image = 'image';
   static const String token = 'token';
@@ -34,6 +37,12 @@ class Constants {
   static const Color homeBackground = Color(0xFF1A1A1A);
   static const Color purple = Color(0xFF8B5CF6);
   static const Color white = Color.fromARGB(255, 255, 255, 255);
+  static const Color black = Colors.black;
+  static const Color grey = Colors.grey;
+  static const Color darkGrey = Color.fromARGB(255, 49, 49, 49);
+  static const Color transparent = Colors.transparent;
+
+  static const FontWeight bold = FontWeight.w700;
 
 //db routes
   static const String ridesDbRoute = 'rides';

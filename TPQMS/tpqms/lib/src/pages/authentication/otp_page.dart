@@ -185,8 +185,9 @@ class _OTPScreenState extends State<OTPPage> {
                         ),
                   const SizedBox(height: 5),
                   TextButton(
-                    onPressed: () {
-                      //todo: listen otp code
+                    onPressed: () async {
+                      // await _authProvider.resendOTP(
+                      //     phoneNumber: phoneNumber, context: context);
                     },
                     child: Text(
                       'Resend Code',
@@ -202,43 +203,4 @@ class _OTPScreenState extends State<OTPPage> {
           ),
         ));
   }
-
-  // void verifyOTPCode({
-  //   required String verificationId,
-  //   required String otpCode,
-  // }) async {
-  //   final authProvider = context.read<AuthenticationProvider>();
-  //   authProvider.verifyOTPCode(
-  //       verificationId: verificationId,
-  //       otpCode: otpCode,
-  //       context: context,
-  //       onSuccess: () async {
-  //         bool userExists = await authProvider.checkUserExists();
-  //         if (userExists) {
-  //           //get info from firestore
-  //           await authProvider.getUserData();
-  //           //navigate to home screen
-  //           navigate(userExists: true);
-  //         } else {
-  //           navigate(userExists: false);
-  //         }
-  //       });
-  // }
-
-  // void navigate({required bool userExists}) {
-  //   //navigate to home screen
-  //   if (userExists) {
-  //     Navigator.pushNamedAndRemoveUntil(
-  //       context,
-  //       Constants.homePage,
-  //       (route) => false,
-  //     );
-  //   } else {
-  //     //navigate to
-  //     Navigator.pushReplacementNamed(
-  //       context,
-  //       Constants.homePage,
-  //     );
-  //   }
-  // }
 }
