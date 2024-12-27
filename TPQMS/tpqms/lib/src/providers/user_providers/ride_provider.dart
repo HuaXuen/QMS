@@ -21,11 +21,13 @@ class RideProvider extends ChangeNotifier {
   List<RideModel> get rides => _rides;
   bool get isLoading => _isLoading;
   int get rideCount => _rides.length;
-  Stream<List<RideModel>> get ridesStream => _rideService.streamRides();
+  Stream<List<RideModel>> get ridesStream =>
+      _rideService.streamRidesWithBatches();
 
   void _subscribeToRides() {
     _ridesSubscription?.cancel();
-    _ridesSubscription = _rideService.streamRides().listen((updatedRides) {
+    _ridesSubscription =
+        _rideService.streamRidesWithBatches().listen((updatedRides) {
       _rides = updatedRides;
       print("${_rides}");
       notifyListeners();
@@ -49,15 +51,6 @@ class RideProvider extends ChangeNotifier {
         .toList());
   }
 
-  // Business logic methods
-  List<RideModel> getRidesByCategory(String category) {
-    return _rides.where((ride) => ride.category == category).toList();
-  }
-
-  List<RideModel> getRidesByStatus(String status) {
-    return _rides.where((ride) => ride.status == status).toList();
-  }
-
   // CRUD operations through service
   Future<String?> addRide({
     required String name,
@@ -67,41 +60,77 @@ class RideProvider extends ChangeNotifier {
     required int queueTime,
     required int numOfRidersAllowed,
   }) async {
+    _isLoading = true;
+    notifyListeners();
+
     try {
-      // Step 1: Prepare the Ride Data (without ID yet)
-      final newRide = RideModel(
-          name: name,
-          category: category,
-          status: status,
-          heightRequirement: heightRequirement,
-          queueTime: queueTime,
-          numOfRidersAllowed: numOfRidersAllowed,
-          currentBatchId: '');
-      var mappedNewRide = newRide.toMap();
-      // Step 2: Generate the Ride ID using the backend
-      final rideId = await _rideService.addRideWithAutoId(mappedNewRide);
-      final batchId = await _rideService.generateBatchId(rideId!);
-
-      // Step 3: Create the first batch
-      final firstBatch = BatchModel(
-          id: batchId,
-          rideId: rideId,
-          queueIds: ['empty'],
-          batchStatus: 'pending',
-          createdAt: DateTime.now().millisecondsSinceEpoch);
-      var mappedFirstBatch = firstBatch.toMap();
-      // Step 4: Update both Ride and First Batch Atomically
-      await _rideService.addRideAndBatch(
-          rideId, mappedNewRide, batchId, mappedFirstBatch);
-
-      await _rideService.generateTimeslots(
-          rideId, 12); // 12 slots = 4 hours of batches
-      print('Ride and first batch added successfully with ID: $rideId');
-      return rideId; // Return the Ride ID
+      print(
+          'Adding ride with details: $name, $category, $status, $heightRequirement, $queueTime, $numOfRidersAllowed');
+      final rideId = await _rideService.addRide(
+        name: name,
+        category: category,
+        status: status,
+        heightRequirement: heightRequirement,
+        queueTime: queueTime,
+        numOfRidersAllowed: numOfRidersAllowed,
+        createdAt: DateTime.now(),
+      );
+      print('Ride added successfully: $rideId');
+      _isLoading = false;
+      notifyListeners();
+      return rideId;
     } catch (e) {
-      debugPrint('Error adding ride with batch: $e');
+      print('Error adding ride in provider: $e');
+      _isLoading = false;
+      notifyListeners();
       return null;
     }
+  }
+
+  Stream<List<BatchModel>> streamAvailableBatchesForRide(String rideId) {
+    return _rideService.streamBatches(rideId).map((batches) {
+      // Get the current time and explicitly convert to UTC
+      final now = DateTime.now();
+      final nowUtc = DateTime.utc(
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
+        now.minute,
+        now.second,
+      );
+
+      // Calculate the end of the current hour in UTC
+      final endOfHour = DateTime.utc(
+        nowUtc.year,
+        nowUtc.month,
+        nowUtc.day,
+        nowUtc.hour + 1,
+      );
+
+      print('Raw Now: $now');
+      print(
+          'Local Time Zone: ${now.timeZoneName}, Offset: ${now.timeZoneOffset}');
+      print('UTC Now: $nowUtc');
+      print('End of Hour (UTC): $endOfHour');
+
+      final filteredBatches = batches.where((batch) {
+        final startTime =
+            DateTime.fromMillisecondsSinceEpoch(batch.startAt, isUtc: true);
+        final endTime =
+            DateTime.fromMillisecondsSinceEpoch(batch.endAt, isUtc: true);
+
+        debugPrint('Batch ID: ${batch.id}, Start: $startTime, End: $endTime');
+        debugPrint(
+            'isAfter(now): ${startTime.isAfter(nowUtc)}, isBefore(endOfHour): ${startTime.isBefore(endOfHour)}');
+
+        return endTime.isAfter(nowUtc) && startTime.isBefore(endOfHour);
+      }).toList();
+
+      notifyListeners();
+      print("HEREE Filtered Batches: $filteredBatches");
+      return filteredBatches;
+    });
   }
 
   Future<void> closeRide(String rideId) async {

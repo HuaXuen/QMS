@@ -181,7 +181,7 @@ class _RideDetailsBottomSheetState extends State<RideDetailsBottomSheet> {
                   backgroundColor: (widget.rideData.status.toLowerCase() !=
                               'under maintenance' &&
                           widget.rideData.status.toLowerCase() != 'closed')
-                      ? Colors.blue // Active button color
+                      ? Constants.purple // Active button color
                       : Colors.grey.shade600, // Disabled button color
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -191,7 +191,8 @@ class _RideDetailsBottomSheetState extends State<RideDetailsBottomSheet> {
                 child: const Text(
                   'Queue Now',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 20,
+                    fontFamily: "Times New Roman",
                     fontWeight: FontWeight.bold,
                     color: Constants.white,
                   ),

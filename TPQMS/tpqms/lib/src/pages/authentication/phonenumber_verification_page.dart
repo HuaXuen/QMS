@@ -148,8 +148,7 @@ class _PhoneNumberVerificationState extends State<PhoneNumberVerificationPage> {
                               ),
                             )
                           : IconButton(
-                              icon: Icon(Icons.arrow_forward,
-                                  color: Constants.purple),
+                              icon: Icon(Icons.done, color: Constants.purple),
                               onPressed: () {
                                 _authProvider.signInWithPhoneNumber(
                                   phoneNumber:

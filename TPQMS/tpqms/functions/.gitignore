@@ -1,0 +1,5 @@
+node_modules/
+*.local
+/lib
+.env
+keys/service-account.json
