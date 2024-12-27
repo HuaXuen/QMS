@@ -9,6 +9,18 @@ class CustomPopupMenu extends StatelessWidget {
   final Function() onCanceled;
   final String? label;
 
+  // Color customization parameters with defaults matching the original implementation
+  final Color labelTextColor;
+  final Color itemTextColor;
+  final Color containerBackgroundColor;
+  final Color containerBorderColorDefault;
+  final Color containerBorderColorOpen;
+  final double containerBorderWidthDefault;
+  final double containerBorderWidthOpen;
+  final Color selectedValueTextColor;
+  final Color dropdownArrowColor;
+  final Color menuBackgroundColor;
+
   const CustomPopupMenu({
     Key? key,
     required this.value,
@@ -18,6 +30,17 @@ class CustomPopupMenu extends StatelessWidget {
     required this.onOpened,
     required this.onCanceled,
     this.label,
+    // Default colors matching the original implementation
+    this.labelTextColor = Colors.white70,
+    this.itemTextColor = Colors.white,
+    this.containerBackgroundColor = const Color(0xFF1E293B),
+    this.containerBorderColorDefault = const Color(0xFF334155),
+    this.containerBorderColorOpen = const Color(0xFF8B5CF6),
+    this.containerBorderWidthDefault = 1,
+    this.containerBorderWidthOpen = 2,
+    this.selectedValueTextColor = Colors.white,
+    this.dropdownArrowColor = Colors.white,
+    this.menuBackgroundColor = const Color(0xFF1E293B),
   }) : super(key: key);
 
   @override
@@ -28,15 +51,15 @@ class CustomPopupMenu extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: labelTextColor,
               fontSize: 14,
             ),
           ),
           const SizedBox(height: 8),
         ],
         Container(
-          width: double.infinity, // Add this to match parent width
+          width: double.infinity,
           child: PopupMenuButton<String>(
             initialValue: value,
             onSelected: onSelected,
@@ -50,7 +73,7 @@ class CustomPopupMenu extends StatelessWidget {
                     width: double.infinity,
                     child: Text(
                       item,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(color: itemTextColor),
                     ),
                   ),
                 );
@@ -59,13 +82,15 @@ class CustomPopupMenu extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: containerBackgroundColor,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isOpen
-                      ? const Color(0xFF8B5CF6)
-                      : const Color(0xFF334155),
-                  width: isOpen ? 2 : 1,
+                      ? containerBorderColorOpen
+                      : containerBorderColorDefault,
+                  width: isOpen
+                      ? containerBorderWidthOpen
+                      : containerBorderWidthDefault,
                 ),
               ),
               child: Row(
@@ -73,20 +98,20 @@ class CustomPopupMenu extends StatelessWidget {
                 children: [
                   Text(
                     value,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: selectedValueTextColor),
                   ),
-                  const Icon(
+                  Icon(
                     Icons.arrow_drop_down,
-                    color: Colors.white,
+                    color: dropdownArrowColor,
                   ),
                 ],
               ),
             ),
             position: PopupMenuPosition.under,
-            color: const Color(0xFF1E293B),
+            color: menuBackgroundColor,
             constraints: const BoxConstraints(
-              minWidth: double.infinity, // Modified this
-              maxWidth: double.infinity, // Added this
+              minWidth: double.infinity,
+              maxWidth: double.infinity,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),

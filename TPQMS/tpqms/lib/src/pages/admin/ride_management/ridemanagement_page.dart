@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/common/resuable_widgets/reusable_popupmenu.dart';
 import 'package:tpqms/common/resuable_widgets/reusable_textfield.dart';
-import 'package:tpqms/main.dart';
-import 'package:tpqms/src/model/ride_model.dart';
+import 'package:tpqms/common/resuable_widgets/reusable_popup.dart';
 import 'package:tpqms/src/providers/user_providers/ride_provider.dart';
 
 class RideManagementPage extends StatefulWidget {
@@ -22,7 +21,7 @@ class _RideManagementPageState extends State<RideManagementPage> {
   final _queueTimeController = TextEditingController(text: '--');
   final _maxRidersAllowedController = TextEditingController(text: '2');
   String _selectedCategory = 'Water Rides';
-  String _selectedStatus = 'Operational';
+  String _selectedStatus = 'Available';
   bool _isCategoryOpen = false;
   bool _isStatusOpen = false;
 
@@ -37,13 +36,64 @@ class _RideManagementPageState extends State<RideManagementPage> {
   final List<String> _statuses = [
     'Available',
     'Under Maintenance',
-    'Closing Soon',
     'Closed',
   ];
+
+  void _resetForm() {
+    setState(() {
+      _rideNameController.clear();
+      _heightRequirementController.clear();
+      _queueTimeController.text = '--';
+      _maxRidersAllowedController.text = '2';
+      _selectedCategory = 'Water Rides';
+      _selectedStatus = 'Available';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final _rideProvider = context.watch<RideProvider>();
+
+    void _submitRide() async {
+      if (_formKey.currentState?.validate() == true) {
+        try {
+          final rideId = await _rideProvider.addRide(
+            name: _rideNameController.text,
+            category: _selectedCategory,
+            status: _selectedStatus,
+            heightRequirement: int.parse(_heightRequirementController.text),
+            queueTime: 1,
+            numOfRidersAllowed: int.parse(_maxRidersAllowedController.text),
+          );
+
+          if (rideId != null) {
+            ReusablePopup.show(
+              context: context,
+              title: "Success",
+              message: "Ride added successfully!",
+              type: PopupType.success,
+              onConfirm: () {
+                _resetForm();
+              },
+            );
+          } else {
+            ReusablePopup.show(
+              context: context,
+              title: "Error",
+              message: "Failed to add ride. Unknown error occurred.",
+              type: PopupType.error,
+            );
+          }
+        } catch (e) {
+          ReusablePopup.show(
+            context: context,
+            title: "Error",
+            message: e.toString(),
+            type: PopupType.error,
+          );
+        }
+      }
+    }
 
     return Scaffold(
       backgroundColor: Constants.primaryBackground,
@@ -183,27 +233,7 @@ class _RideManagementPageState extends State<RideManagementPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            bool? _isValid = _formKey.currentState?.validate();
-                            if (_isValid == true) {
-                              final rideId = await _rideProvider.addRide(
-                                name: _rideNameController.text,
-                                category: _selectedCategory,
-                                status: _selectedStatus,
-                                heightRequirement: int.parse(
-                                    _heightRequirementController.text),
-                                queueTime: 0,
-                                numOfRidersAllowed:
-                                    int.parse(_maxRidersAllowedController.text),
-                              );
-                              if (rideId != null) {
-                                print(
-                                    'Ride added successfully with ID: $rideId');
-                              } else {
-                                print('Failed to add ride');
-                              }
-                            }
-                          },
+                          onPressed: _submitRide,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF8B5CF6),
                             padding: const EdgeInsets.symmetric(vertical: 16),
