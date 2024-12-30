@@ -2,8 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TicketModel {
   final String ticketId; //included in the ticket
-  //final String ticketType; //included in the ticket
-  final int numOfChildren;
+  final String phoneNumber;
   final String userId; //currentUser userid
   final DateTime purchaseTime;
   final DateTime expirationTime;
@@ -15,7 +14,7 @@ class TicketModel {
   TicketModel({
     required this.ticketId,
     //required this.ticketType,
-    required this.numOfChildren,
+    required this.phoneNumber,
     required this.userId,
     required this.purchaseTime,
     required this.expirationTime,
@@ -29,11 +28,12 @@ class TicketModel {
     return {
       'ticketId': ticketId,
       //'ticketType': ticketType,
-      'numOfChildren': numOfChildren,
+      'phoneNumber': phoneNumber,
       'userId': userId,
       'purchaseTime': Timestamp.fromDate(purchaseTime),
       'expirationTime': Timestamp.fromDate(expirationTime),
       'isValid': isValid,
+      'price': price,
       'missedQueue': missedQueue,
       'ridesQueued': ridesQueued,
     };
@@ -43,8 +43,8 @@ class TicketModel {
     return TicketModel(
       ticketId: map['ticketId'] ?? '',
       //ticketType: map['ticketType'] ?? '',
-      numOfChildren: map['numOfChildren'] ?? 0,
       userId: map['userId'] ?? '',
+      phoneNumber: map['phoneNumber'] ?? '',
       purchaseTime: (map['purchaseTime'] as Timestamp).toDate(),
       expirationTime: (map['expirationTime'] as Timestamp).toDate(),
       isValid: map['isValid'] ?? false,

@@ -114,9 +114,10 @@ class CustomOutlinedButtonwithIcon extends StatelessWidget {
 
 class CustomElevatedButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color backgroundColor;
   final Color foregroundColor;
+  final Widget? child; // Add this line for the optional child property
 
   const CustomElevatedButton({
     Key? key,
@@ -124,9 +125,7 @@ class CustomElevatedButton extends StatelessWidget {
     required this.onPressed,
     required this.backgroundColor,
     required this.foregroundColor,
-
-    // this.backgroundColor = Constants.purple, // Default purple
-    // this.foregroundColor = Constants.white,
+    this.child, // Add this line for initialization
   }) : super(key: key);
 
   @override
@@ -143,21 +142,23 @@ class CustomElevatedButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(width: 12),
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: foregroundColor,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+        child: child ??
+            Row(
+              // Use `child` if provided, fallback to default layout
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(width: 12),
+                Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: foregroundColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
       ),
     );
   }

@@ -147,15 +147,16 @@ export const generateDailyBatches = async () => {
   let now = new Date(); // Current local time
   let today = new Date(); // Target day for batch generation
 
-  // Determine the target date for batch generation
-  if (
-    now.getHours() >= 18 ||
-    (now.getHours() < 10 && now.getDate() !== today.getDate())
-  ) {
-    // If after 6:01 PM or before 9:59 AM (next day), generate for the next day
-    if (now.getHours() >= 18) {
-      today.setDate(today.getDate() + 1); // Move to the next day if after 6:01 PM
-    }
+  // Revised date logic
+  if (now.getHours() >= 18) {
+    // After 6 PM, generate for next day
+    today.setDate(today.getDate() + 1);
+  } else if (now.getHours() < 10) {
+    // Before 10 AM, generate for current day
+    // No date adjustment needed since we want today's batches
+  } else {
+    // Between 10 AM and 6 PM, generate for next day
+    today.setDate(today.getDate() + 1);
   }
 
   today.setHours(10, 0, 0, 0); // Start time: 10:00 AM (local time)

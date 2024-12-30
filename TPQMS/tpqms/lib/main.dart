@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_app_check/firebase_app_check.dart'; //appcheck
 import 'package:provider/provider.dart';
+import 'package:tpqms/services/common_services/queue_service.dart';
 import 'package:tpqms/services/common_services/ride_service.dart';
+import 'package:tpqms/services/common_services/ticket_service.dart';
+import 'package:tpqms/services/common_services/user_service.dart';
+import 'package:tpqms/services/firebase_services/firestore_service.dart';
 import 'package:tpqms/src/pages/authentication/adminverification_page.dart';
 import 'package:tpqms/src/pages/authentication/otp_page.dart';
 import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
@@ -13,14 +17,18 @@ import 'package:tpqms/src/pages/loading_screen.dart';
 import 'package:tpqms/src/pages/users/home_page/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tpqms/src/pages/authentication/login_page.dart';
+import 'package:tpqms/src/pages/users/profile/profile_page.dart';
+import 'package:tpqms/src/pages/users/queue_page/queue_page.dart';
 import 'package:tpqms/src/pages/users/qr_scanner/qrscanner_page.dart';
 import 'package:tpqms/src/pages/admin/ride_management/ridemanagement_page.dart';
 import 'package:tpqms/src/providers/auth_providers/authentication_provider.dart';
 import 'package:tpqms/src/providers/auth_providers/session_provider.dart';
 import 'package:tpqms/src/providers/auth_providers/userinfo_provider.dart';
 import 'package:tpqms/src/providers/common_providers/image_provider.dart';
+import 'package:tpqms/src/providers/user_providers/queue_provider.dart';
 import 'package:tpqms/src/providers/user_providers/ride_provider.dart';
 import 'package:tpqms/services/firebase_services/realtimedb_service.dart';
+import 'package:tpqms/src/providers/user_providers/ticket_provider.dart';
 import 'src/firebase_options.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tpqms/src/pages/loading_screen.dart';
@@ -38,10 +46,14 @@ void main() async {
   );
   final RealtimeDbService _dbService = RealtimeDbService();
   final RideService _rideService = RideService(_dbService);
+  final FirestoreService _firestoreService = FirestoreService();
+  final QueueService _queueService = QueueService(_dbService, _rideService);
+  final TicketService _ticketService = TicketService(_firestoreService);
+  final UserService _userService = UserService(_firestoreService);
   runApp(MultiProvider(providers: [
-    ChangeNotifierProvider(
-      create: (_) => SessionManagerProvider(),
-    ),
+    // ChangeNotifierProvider(
+    //   create: (_) => SessionManagerProvider(),
+    // ),
 
     // Dependent providers
     // ChangeNotifierProxyProvider<SessionManagerProvider, AuthenticationProvider>(
@@ -58,6 +70,16 @@ void main() async {
       lazy: false,
     ),
     ChangeNotifierProvider(create: (_) => ImageProviderService()),
+    ChangeNotifierProvider(
+      create: (context) =>
+          TicketProvider(_ticketService, _firestoreService, _userService),
+      lazy: false,
+    ),
+    ChangeNotifierProvider(
+      create: (context) =>
+          QueueProvider(_queueService, _ticketService, _userService),
+      lazy: false,
+    )
   ], child: MyApp()));
 }
 
@@ -86,6 +108,8 @@ class MyApp extends StatelessWidget {
           Constants.UserInformationPage: (context) =>
               const UserInformationPage(),
           Constants.RideManagementPage: (context) => const RideManagementPage(),
+          Constants.QueuePage: (context) => const QueuePage(),
+          Constants.ProfilePage: (context) => const ProfilePage(),
         });
   }
 }

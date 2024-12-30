@@ -15,30 +15,39 @@ class RideService {
   Stream<List<RideModel>> streamRidesWithBatches() {
     return _dbService
         .streamData(Constants.ridesDbRoute)
-        .asyncMap((DatabaseEvent event) async {
+        .asyncMap((event) async {
       if (event.snapshot.value == null) return [];
 
       try {
         final Map data = event.snapshot.value as Map;
 
-        // Fetch rides
+        // Log the raw data for debugging
+        //print('[RIDE-SERVICE] Raw data received: $data');
+
         final rides = data.entries.map<RideModel>((entry) {
-          return RideModel.fromMap(
-            entry.key as String,
-            Map.from(entry.value as Map),
-          );
+          // Log each ride's data before transformation
+          //print('[RIDE-SERVICE] Processing ride ${entry.key}: ${entry.value}');
+
+          final rideMap = Map<String, dynamic>.from(entry.value as Map);
+          return RideModel.fromMap(entry.key as String, rideMap);
         }).toList();
 
-        // Fetch batches for each ride and associate them
+        // Fetch batches with error handling
         for (var ride in rides) {
-          final batches = await _fetchBatchesForRide(ride.id);
-          ride.batches = batches;
+          try {
+            final batches = await _fetchBatchesForRide(ride.id);
+            ride.batches = batches;
+          } catch (e) {
+            print(
+                '[RIDE-SERVICE] Error fetching batches for ride ${ride.id}: $e');
+            // Continue with other rides even if one fails
+          }
         }
 
         return rides;
       } catch (e) {
-        debugPrint('Error parsing rides: $e');
-        return [];
+        print('[RIDE-SERVICE] Error processing rides: $e');
+        return []; // Return empty list instead of throwing
       }
     });
   }
@@ -72,6 +81,19 @@ class RideService {
     } catch (e) {
       debugPrint('Error adding batch for ride $rideId: $e');
       rethrow;
+    }
+  }
+
+  Future<RideModel?> getRideById(String rideId) async {
+    try {
+      final data = await _dbService.read('rides/$rideId');
+      if (data != null) {
+        return RideModel.fromMap(rideId, Map<String, dynamic>.from(data));
+      }
+      return null;
+    } catch (e) {
+      print('Error getting ride by ID: $e');
+      return null;
     }
   }
 

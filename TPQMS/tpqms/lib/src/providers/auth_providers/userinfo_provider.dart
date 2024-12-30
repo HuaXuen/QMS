@@ -12,6 +12,8 @@ class UserInfoProvider extends ChangeNotifier {
   String? _phoneNumber;
   String? _age;
   String? _height;
+  UserModel? _currentUser;
+
   //bool? _isOnline;
   //UserModel? _userModel;
 
@@ -26,6 +28,15 @@ class UserInfoProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final UserService _userService = UserService(FirestoreService());
   final bool online = true;
+
+  void setCurrentUser(UserModel user) {
+    _uid = user.uid;
+    _name = user.name;
+    _phoneNumber = user.phoneNumber;
+    _age = user.age;
+    _height = user.height;
+    notifyListeners();
+  }
 
   Future<UserModel?> addUserToFirestore({
     required String uid,
@@ -64,14 +75,68 @@ class UserInfoProvider extends ChangeNotifier {
   }
 
   Future<void> fetchUsername() async {
+    if (_name != null) return; // Use cached data if available
+
     try {
       String? fetchedUsername = await _userService.getUsername();
       if (fetchedUsername != null) {
         _name = fetchedUsername;
-        notifyListeners(); // Notify listeners of state change
+        notifyListeners();
       }
     } catch (e) {
       print("Failed to get username: $e");
+    }
+  }
+
+  Future<void> updateUserInfo({
+    String? name,
+    String? age,
+    String? height,
+    required BuildContext context,
+  }) async {
+    try {
+      // Only update fields that are provided
+      Map<String, dynamic> updates = {};
+      if (name != null) updates[Constants.name] = name;
+      if (age != null) updates[Constants.age] = age;
+      if (height != null) updates[Constants.height] = height;
+
+      // Get current user's UID
+      if (_uid == null) {
+        throw Exception('No user is currently logged in');
+      }
+
+      // Update Firestore
+      await _firestoreService.updateDocument(
+        Constants.users,
+        _uid!,
+        updates,
+      );
+
+      // Update local state
+      if (name != null) _name = name;
+      if (age != null) _age = age;
+      if (height != null) _height = height;
+
+      notifyListeners();
+    } catch (e) {
+      print('Error updating user info: $e');
+      throw e; // Rethrow to handle in UI
+    }
+  }
+
+  Future<String?> getHeight() async {
+    try {
+      String? fetchedHeight = await _userService.getHeight();
+      if (fetchedHeight != null) {
+        _height = fetchedHeight;
+        notifyListeners(); // Notify listeners of state change
+        return fetchedHeight;
+      }
+      return null;
+    } catch (e) {
+      print("Failed to get height: $e");
+      return null;
     }
   }
 
@@ -90,6 +155,36 @@ class UserInfoProvider extends ChangeNotifier {
     } catch (e) {
       print("Failed to validate username: $e");
       return false; // Return false if an error occurs
+    }
+  }
+
+  // void reset() {
+  //   _uid = null;
+  //   _name = null;
+  //   _phoneNumber = null;
+  //   _age = null;
+  //   _height = null;
+  //   notifyListeners();
+  // }
+
+  // Example for RideProvider
+  Future<void> reset() async {
+    try {
+      print('[RIDE-PROVIDER] Starting reset...');
+
+      _uid = null;
+      _name = null;
+      _phoneNumber = null;
+      _age = null;
+      _height = null;
+      notifyListeners();
+
+      // Notify listeners AFTER cleanup
+      notifyListeners();
+
+      print('[RIDE-PROVIDER] Reset completed');
+    } catch (e) {
+      print('[RIDE-PROVIDER] Error during reset: $e');
     }
   }
 }

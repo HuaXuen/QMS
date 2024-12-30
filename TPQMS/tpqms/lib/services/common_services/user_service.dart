@@ -93,12 +93,55 @@ class UserService {
     }
   }
 
+  Future<String?> getHeight() async {
+    try {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser != null) {
+        String uid = currentUser.uid;
+
+        // Fetch the user data from Firestore using the uid
+        DocumentSnapshot documentSnapshot =
+            await _firestoreService.getDocument(Constants.users, uid);
+
+        if (documentSnapshot.exists) {
+          // Use UserModel.fromMap to convert the data to a UserModel instance
+          UserModel user = UserModel.fromMap(
+              documentSnapshot.data() as Map<String, dynamic>);
+          print("CHECK HEIGHT HEREEEEEEE: ${user.height}");
+          return user.height; // Access the height property of the UserModel
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Error getting user height: $e');
+      return null;
+    }
+  }
+
   Future<String?> getCurrentUserUid() async {
     try {
       User? currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser != null) {
+        print("USERUSERUSER HEREEEEEEEEEEEEEEEEE: ${currentUser.uid}");
         return currentUser.uid; // Directly fetch the authenticated user's UID
+      }
+      return null;
+    } catch (e) {
+      print('Error getting current user UID: $e');
+      return null;
+    }
+  }
+
+  Future<String?> getCurrentUserPhoneNumber() async {
+    try {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser != null) {
+        print("USERUSERUSER HEREEEEEEEEEEEEEEEEE: ${currentUser.phoneNumber}");
+        return currentUser
+            .phoneNumber; // Directly fetch the authenticated user's UID
       }
       return null;
     } catch (e) {
