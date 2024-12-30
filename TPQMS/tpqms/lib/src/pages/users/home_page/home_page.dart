@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tpqms/common/constants.dart';
+import 'package:tpqms/common/resuable_widgets/main_page_wrapper.dart';
 import 'package:tpqms/common/resuable_widgets/reusable_appbar.dart';
 import 'package:tpqms/common/resuable_widgets/reusable_bottompopup.dart';
 import 'package:tpqms/common/resuable_widgets/reusable_listview.dart';
@@ -20,17 +21,40 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<String> Category = [];
-  final Navigation navigation = Navigation(); // Instantiate Navigation
+  final Navigation navigation = Navigation();
 
   @override
   void initState() {
     super.initState();
-    //Fetch the username once the widget is created
     _fetchUsernameData();
+    _initializeRides();
+  }
+
+  Future<void> _initializeRides() async {
+    // Ensure widget is mounted before proceeding
+    if (!mounted) return;
+
+    try {
+      print("[HOME] Starting ride initialization");
+      await context.read<RideProvider>().refreshRides();
+      print("[HOME] Ride initialization complete");
+    } catch (e) {
+      print("[HOME] Error during initialization: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Error refreshing rides. Pull down to retry.')),
+        );
+      }
+    }
+  }
+
+  // Add pull-to-refresh capability
+  Future<void> _onRefresh() async {
+    await context.read<RideProvider>().refreshRides();
   }
 
   Future<void> _fetchUsernameData() async {
-    // Use Provider.of with listen: false in initState
     final userProvider = Provider.of<UserInfoProvider>(context, listen: false);
     await userProvider.fetchUsername();
   }
@@ -38,50 +62,48 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final userName = Provider.of<UserInfoProvider>(context).name;
+    return Scaffold(
+        body: RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: // Your existing HomePage content
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: Colors.grey.shade200,
-        appBar: CustomAppBar(
-          title: 'Welcome $userName, \nLet the fun begin!',
-          backgroundColor: Constants.purple,
-          tabBar: const TabBar(
-            labelColor: Constants.white,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            dividerColor: Constants.transparent,
-            unselectedLabelColor: Colors.white60,
-            indicator: UnderlineTabIndicator(
-              borderSide: BorderSide(width: 3.5, color: Constants.white),
-              insets: EdgeInsets.symmetric(horizontal: 16.0),
-            ),
-            tabs: [
-              Tab(text: 'Rides Available'),
-              Tab(text: 'Rides Closed'),
-            ],
-          ),
-        ),
-        body: Stack(
-          children: [
-            TabBarView(
-              children: [
-                RidesAvailableTab(navigation: navigation),
-                RidesClosedTab(navigation: navigation),
-              ],
-            ),
-            CustomNavigationBar(
-              items: [
-                NavBarItem(icon: Icons.home_outlined, label: 'Home'),
-                NavBarItem(icon: Icons.timer_outlined, label: 'Queue'),
-                NavBarItem(icon: Icons.qr_code_scanner, label: 'Scan Ticket'),
-                NavBarItem(icon: Icons.map_outlined, label: 'Map'),
-                NavBarItem(icon: Icons.person_outline, label: 'Profile'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+                // We wrap the entire content with MainPageWrapper
+                // The index 0 represents Home in the navbar
+                MainPageWrapper(
+              currentIndex: 0, // Home is the first item
+              child: DefaultTabController(
+                length: 2,
+                child: Scaffold(
+                  backgroundColor: Colors.grey.shade200,
+                  appBar: CustomAppBar(
+                    title: 'Welcome $userName, \nLet the fun begin!',
+                    backgroundColor: Constants.purple,
+                    tabBar: const TabBar(
+                      labelColor: Constants.white,
+                      labelStyle:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      dividerColor: Constants.transparent,
+                      unselectedLabelColor: Colors.white60,
+                      indicator: UnderlineTabIndicator(
+                        borderSide:
+                            BorderSide(width: 3.5, color: Constants.white),
+                        insets: EdgeInsets.symmetric(horizontal: 16.0),
+                      ),
+                      tabs: [
+                        Tab(text: 'Rides Available'),
+                        Tab(text: 'Rides Closed'),
+                      ],
+                    ),
+                  ),
+                  body: TabBarView(
+                    children: [
+                      RidesAvailableTab(navigation: navigation),
+                      RidesClosedTab(navigation: navigation),
+                    ],
+                  ),
+                ),
+              ),
+            )));
   }
 }
 

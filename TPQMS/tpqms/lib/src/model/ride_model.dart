@@ -10,6 +10,9 @@ class RideModel {
   final int numOfRidersAllowed;
   final String currentBatchId;
   final DateTime createdAt;
+  // final double? centerLatitude; // Geofence center latitude
+  // final double? centerLongitude; // Geofence center longitude
+  // final double? radius; // Geofence radius in meters
   List<BatchModel>? batches;
 
   RideModel({
@@ -22,12 +25,15 @@ class RideModel {
     required this.numOfRidersAllowed,
     required this.currentBatchId,
     required this.createdAt,
+    // this.centerLatitude,
+    // this.centerLongitude,
+    // this.radius,
     this.batches,
   });
 
   @override
   String toString() {
-    return 'RideModel(id: $id, name: $name, category: $category, status: $status, heightRequirement: $heightRequirement, queueTime: $queueTime, numOfRidersAllowed: $numOfRidersAllowed, currentBatchId: $currentBatchId, createdAt: $createdAt, batches: $batches)';
+    return 'RideModel(id: $id, name: $name, category: $category, status: $status, heightRequirement: $heightRequirement, queueTime: $queueTime, numOfRidersAllowed: $numOfRidersAllowed, currentBatchId: $currentBatchId, createdAt: $createdAt)';
   }
 
   Map<String, dynamic> toMap() {
@@ -40,6 +46,9 @@ class RideModel {
       'numOfRidersAllowed': numOfRidersAllowed,
       'currentBatchId': currentBatchId,
       'createdAt': createdAt.millisecondsSinceEpoch,
+      // 'centerLatitude': centerLatitude,
+      // 'centerLongitude': centerLongitude,
+      // 'radius': radius,
       'batches': batches != null
           ? batches!.map((batch) => batch.toMap()).toList()
           : [],
@@ -48,19 +57,40 @@ class RideModel {
 
   factory RideModel.fromMap(String id, Map<String, dynamic> map,
       [List<BatchModel>? batches]) {
+    print('[RIDE-MODEL] Creating RideModel from map: $map'); // Debug log
+
+    // Validate required fields
+    if (map['name'] == null || map['status'] == null) {
+      print('[RIDE-MODEL] Warning: Required fields missing in map');
+    }
+
     return RideModel(
       id: id,
       name: map['name'] ?? '',
       category: map['category'] ?? '',
       status: map['status'] ?? '',
-      heightRequirement: map['heightRequirement'] ?? 0,
-      queueTime: map['queueTime'] ?? 0,
-      numOfRidersAllowed: map['numOfRidersAllowed'] ?? 0,
+      heightRequirement: _parseIntSafely(map['heightRequirement']),
+      queueTime: _parseIntSafely(map['queueTime']),
+      numOfRidersAllowed: _parseIntSafely(map['numOfRidersAllowed']),
       currentBatchId: map['currentBatchId'] ?? '',
-      createdAt: map['createdAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'])
-          : DateTime.now(),
+      createdAt: _parseDateTimeSafely(map['createdAt']),
       batches: batches,
     );
+  }
+
+// Helper methods for safer parsing
+  static int _parseIntSafely(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static DateTime _parseDateTimeSafely(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    return DateTime.now();
   }
 }

@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_scanner_overlay/qr_scanner_overlay.dart';
 import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/src/providers/user_providers/qrscanner_provider.dart';
+import 'package:tpqms/src/providers/user_providers/ticket_provider.dart';
 
 class QrScannerPage extends StatefulWidget {
   const QrScannerPage({Key? key}) : super(key: key);
@@ -27,6 +31,39 @@ class _QrScannerPageState extends State<QrScannerPage> {
     }
   }
 
+  Future<void> _handleScanResult(BarcodeCapture capture) async {
+    final List<Barcode> barcodes = capture.barcodes;
+    for (final barcode in barcodes) {
+      try {
+        // Parse the QR code data
+        final ticketData = jsonDecode(barcode.rawValue ?? '');
+
+        // Get the TicketProvider using the widget's context
+        final ticketProvider =
+            Provider.of<TicketProvider>(context, listen: false);
+
+        // Attempt to bind the ticket
+        final result = await ticketProvider.bindTicketToCurrentUser(ticketData);
+
+        // Check if widget is still mounted before showing UI feedback
+        if (!mounted) return;
+
+        if (result['success']) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(result['message'])));
+          Navigator.pushReplacementNamed(context, Constants.HomePage);
+        } else {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(result['message'])));
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Invalid ticket QR code')));
+      }
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -40,6 +77,12 @@ class _QrScannerPageState extends State<QrScannerPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Constants.purple),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.flash_on, color: Color(0xFF8A4FFF)),
@@ -90,7 +133,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                                 }
                                 return MobileScanner(
                                   controller: _controller.cameraController,
-                                  onDetect: _controller.onDetect,
+                                  onDetect: _handleScanResult,
                                 );
                               },
                             ),

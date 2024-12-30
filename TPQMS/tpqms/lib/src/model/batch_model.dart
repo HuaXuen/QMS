@@ -3,6 +3,7 @@ class BatchModel {
   final int startAt; // Timestamp in milliseconds
   final int endAt; // Timestamp in milliseconds
   final String batchStatus;
+  final int completedAt;
   final List<String> queueIds;
   final String queueFilledAt;
 
@@ -11,6 +12,7 @@ class BatchModel {
     required this.startAt,
     required this.endAt,
     required this.batchStatus,
+    required this.completedAt,
     required this.queueIds,
     required this.queueFilledAt,
   });
@@ -23,19 +25,20 @@ class BatchModel {
   factory BatchModel.fromMap(String id, Map<String, dynamic> map) {
     return BatchModel(
       id: id,
-      startAt: map['startAt'] ?? 0,
-      endAt: map['endAt'] ?? 0,
+      startAt: map['startAt'] ?? 0, // Remove assertion, use default
+      endAt: map['endAt'] ?? 0, // Remove assertion, use default
       batchStatus: map['batchStatus'] ?? 'pending',
-      queueIds: List<String>.from(map['queueIds'] ?? []),
+      queueIds: List<String>.from(map['queueIds'] ?? ['empty']),
       queueFilledAt: map['queueFilledAt'] ?? 'Not Filled Up',
+      completedAt: map['completedAt'] ?? 0,
     );
   }
-
   Map<String, dynamic> toMap() {
     return {
       'startAt': startAt,
       'endAt': endAt,
       'batchStatus': batchStatus,
+      'completedAt': completedAt,
       'queueIds': queueIds,
       'queueFilledAt': queueFilledAt,
     };

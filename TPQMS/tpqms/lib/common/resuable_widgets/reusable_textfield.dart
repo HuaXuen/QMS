@@ -15,6 +15,8 @@ class CustomTextField extends StatelessWidget {
   final Widget? suffix;
   final bool showLabel;
   final TextStyle? textStyle;
+  final Color? fillColor;
+  final Color? labelColor;
   final EdgeInsetsGeometry? contentPadding;
   final Function(String)? onChanged;
 
@@ -32,7 +34,9 @@ class CustomTextField extends StatelessWidget {
     this.prefix,
     this.suffix,
     this.showLabel = true,
-    this.textStyle,
+    this.textStyle = const TextStyle(color: Colors.white), // Default white text
+    this.fillColor = const Color(0xFF1E293B), // Default dark background
+    this.labelColor = Colors.white, // Default label color
     this.contentPadding,
     this.onChanged,
   }) : super(key: key);
@@ -45,8 +49,8 @@ class CustomTextField extends StatelessWidget {
         if (showLabel) ...[
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: labelColor ?? Colors.white70, // Use labelColor parameter
               fontSize: 14,
             ),
           ),
@@ -54,26 +58,28 @@ class CustomTextField extends StatelessWidget {
         ],
         TextFormField(
           controller: controller,
-          initialValue: initialValue,
+          initialValue: controller == null ? initialValue : null,
           enabled: enabled,
           keyboardType: keyboardType,
           validator: validator,
           inputFormatters: inputFormatters,
           maxLength: maxLength,
           onChanged: onChanged,
-          style: textStyle ?? const TextStyle(color: Colors.white),
+          style: textStyle, // Use textStyle parameter
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF1E293B),
+            fillColor: fillColor, // Use fillColor parameter
             hintText: hintText,
-            hintStyle: const TextStyle(color: Colors.white54),
+            hintStyle: textStyle?.copyWith(color: Colors.white54) ??
+                const TextStyle(
+                    color: Colors.white54), // Derive hint style from textStyle
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF334155), width: 1),
+              borderSide: BorderSide(color: const Color(0xFF334155), width: 1),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -81,11 +87,11 @@ class CustomTextField extends StatelessWidget {
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.red, width: 1),
+              borderSide: BorderSide(color: Colors.red, width: 1),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
+              borderSide: BorderSide(color: Colors.red, width: 2),
             ),
             contentPadding: contentPadding ??
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

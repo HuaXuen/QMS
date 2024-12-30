@@ -35,18 +35,53 @@ class RealtimeDbService {
   }
 
   // Read operation
+  // Future<Map<String, dynamic>?> read(String path) async {
+  //   try {
+  //     final DatabaseReference ref = _firebaseRealDB.ref(path);
+  //     final snapshot = await ref.get();
+
+  //     if (snapshot.exists) {
+  //       return Map<String, dynamic>.from(snapshot.value as Map);
+  //     }
+  //     return null;
+  //   } catch (e) {
+  //     throw Exception('Failed to read data: $e');
+  //   }
+  // }
+
   Future<Map<String, dynamic>?> read(String path) async {
     try {
       final DatabaseReference ref = _firebaseRealDB.ref(path);
       final snapshot = await ref.get();
 
+      //print("[DB-SERVICE] Raw snapshot value: ${snapshot.value}"); // Debug log
+
       if (snapshot.exists) {
-        return Map<String, dynamic>.from(snapshot.value as Map);
+        if (snapshot.value is Map) {
+          // Convert all levels properly
+          final converted = _convertToStringDynamicMap(snapshot.value as Map);
+          //print("[DB-SERVICE] Converted data: $converted"); // Debug log
+          return converted;
+        }
+        return null;
       }
       return null;
     } catch (e) {
       throw Exception('Failed to read data: $e');
     }
+  }
+
+// Helper method to properly convert nested maps
+  Map<String, dynamic> _convertToStringDynamicMap(Map data) {
+    return Map<String, dynamic>.fromEntries(
+      data.entries.map((e) {
+        var value = e.value;
+        if (value is Map) {
+          value = _convertToStringDynamicMap(value);
+        }
+        return MapEntry(e.key.toString(), value);
+      }),
+    );
   }
 
   // Read with query
@@ -99,7 +134,10 @@ class RealtimeDbService {
   Stream<DatabaseEvent> streamData(String path) {
     try {
       final DatabaseReference ref = _firebaseRealDB.ref(path);
-      return ref.onValue;
+      return ref.onValue.map((event) {
+        //print("[DB-SERVICE] Complete data received: ${event.snapshot.value}");
+        return event;
+      });
     } catch (e) {
       throw Exception('Failed to stream data: $e');
     }
@@ -132,6 +170,42 @@ class RealtimeDbService {
       });
     } catch (e) {
       throw Exception('Failed to run transaction: $e');
+    }
+  }
+
+  // /// Updates multiple paths in the database atomically using a transaction
+  // Future<void> runMultiPathTransaction({
+  //   required Map<String, Map<String, dynamic>> updates,
+  // }) async {
+  //   try {
+  //     final ref = _firebaseRealDB.ref();
+
+  //     await ref.runTransaction((Object? data) {
+  //       // Create a mutable transaction object
+  //       final Transaction result = Transaction.success(data);
+
+  //       // Apply each update
+  //       updates.forEach((path, updateData) {
+  //         ref.child(path).update(updateData);
+  //       });
+
+  //       return result;
+  //     });
+  //   } catch (e) {
+  //     throw Exception('Failed to run multi-path transaction: $e');
+  //   }
+  // }
+
+  Future<void> runMultiPathTransaction({
+    required Map<String, dynamic> updates,
+  }) async {
+    try {
+      final ref = _firebaseRealDB.ref();
+      await ref.update(updates); // Perform atomic updates
+      print('[DB-SERVICE] Successfully completed multi-path transaction');
+    } catch (e) {
+      print('[DB-SERVICE] Error in runMultiPathTransaction: $e');
+      throw Exception('Failed to run multi-path transaction: $e');
     }
   }
 }
