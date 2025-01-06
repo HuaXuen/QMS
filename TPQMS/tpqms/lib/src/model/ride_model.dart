@@ -10,9 +10,9 @@ class RideModel {
   final int numOfRidersAllowed;
   final String currentBatchId;
   final DateTime createdAt;
-  // final double? centerLatitude; // Geofence center latitude
-  // final double? centerLongitude; // Geofence center longitude
-  // final double? radius; // Geofence radius in meters
+  final double? latitude; // Geofence center latitude
+  final double? longitude; // Geofence center longitude
+  final double? radiusInMeters; // Geofence radius in meters
   List<BatchModel>? batches;
 
   RideModel({
@@ -25,9 +25,9 @@ class RideModel {
     required this.numOfRidersAllowed,
     required this.currentBatchId,
     required this.createdAt,
-    // this.centerLatitude,
-    // this.centerLongitude,
-    // this.radius,
+    this.latitude,
+    this.longitude,
+    this.radiusInMeters,
     this.batches,
   });
 
@@ -46,9 +46,9 @@ class RideModel {
       'numOfRidersAllowed': numOfRidersAllowed,
       'currentBatchId': currentBatchId,
       'createdAt': createdAt.millisecondsSinceEpoch,
-      // 'centerLatitude': centerLatitude,
-      // 'centerLongitude': centerLongitude,
-      // 'radius': radius,
+      'latitude': latitude,
+      'longitude': longitude,
+      'radiusInMeters': radiusInMeters,
       'batches': batches != null
           ? batches!.map((batch) => batch.toMap()).toList()
           : [],
@@ -74,6 +74,9 @@ class RideModel {
       numOfRidersAllowed: _parseIntSafely(map['numOfRidersAllowed']),
       currentBatchId: map['currentBatchId'] ?? '',
       createdAt: _parseDateTimeSafely(map['createdAt']),
+      latitude: _parseDoubleSafely(map['latitude']) ?? 0.0,
+      longitude: _parseDoubleSafely(map['longitude']) ?? 0.0,
+      radiusInMeters: _parseDoubleSafely(map['radiusInMeters']) ?? 100.0,
       batches: batches,
     );
   }
@@ -84,6 +87,14 @@ class RideModel {
     if (value is int) return value;
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
+  }
+
+  static double? _parseDoubleSafely(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble(); // Convert int to double
+    if (value is String) return double.tryParse(value);
+    return null; // Default to null if parsing fails
   }
 
   static DateTime _parseDateTimeSafely(dynamic value) {

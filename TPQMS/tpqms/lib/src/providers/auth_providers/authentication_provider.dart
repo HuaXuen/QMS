@@ -15,6 +15,7 @@ import 'package:tpqms/src/providers/auth_providers/session_provider.dart';
 import 'package:tpqms/src/providers/auth_providers/userinfo_provider.dart';
 import 'package:tpqms/src/providers/common_providers/navigation.dart';
 import 'package:tpqms/services/firebase_services/firestore_service.dart';
+import 'package:tpqms/src/providers/user_providers/location_provider.dart';
 import 'package:tpqms/src/providers/user_providers/queue_provider.dart';
 import 'package:tpqms/src/providers/user_providers/ride_provider.dart';
 import 'package:tpqms/src/providers/user_providers/ticket_provider.dart';
@@ -58,11 +59,11 @@ class AuthenticationProvider extends ChangeNotifier {
   get currentUser => null;
 
   //save user data to shared preferences
-  Future<void> saveUserDataToSharedPreferences() async {
-    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-    await sharedPreferences.setString(
-        Constants.userModel, jsonEncode(userModel!.toMap()));
-  }
+  // Future<void> saveUserDataToSharedPreferences() async {
+  //   SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
+  //   await sharedPreferences.setString(
+  //       Constants.userModel, jsonEncode(userModel!.toMap()));
+  // }
 
   // void _reinitializeProviders(BuildContext context) {
   //   final userInfoProvider =
@@ -92,81 +93,78 @@ class AuthenticationProvider extends ChangeNotifier {
     try {
       bool _hasNavigatedToOTP = false;
 
-      bool userExists = await _userService.checkUserExistsByPhone(
-          Constants.users, phoneNumber);
-      if (userExists) {
-        print('User already exists.');
-        print('${phoneNumber}');
-        _uid = await _userService.getUidByPhoneNumber(
-            Constants.users, phoneNumber);
-        print('${_uid}');
-        if (_uid != null) {
-          _userModel = await _userService.getUserData(Constants.users, _uid!);
-          if (_userModel != null) {
-            context.read<UserInfoProvider>().setCurrentUser(_userModel!);
-            // _reinitializeProviders(context);
+      // bool userExists = await _userService.checkUserExistsByPhone(
+      //     Constants.users, phoneNumber);
+      // if (userExists) {
+      //   print('User already exists.');
+      //   print('${phoneNumber}');
+      //   _uid = await _userService.getUidByPhoneNumber(
+      //       Constants.users, phoneNumber);
+      //   print('${_uid}');
+      //   if (_uid != null) {
+      //     _userModel = await _userService.getUserData(Constants.users, _uid!);
+      //     if (_userModel != null) {
+      //       context.read<UserInfoProvider>().setCurrentUser(_userModel!);
+      //       // _reinitializeProviders(context);
 
-            navigation.handleUserLoginNavigation(
-                userExists: true, context: context, userModel: _userModel);
-          } else {
-            throw Exception('Failed to load user data');
+      //       navigation.handleUserLoginNavigation(
+      //           userExists: true, context: context, userModel: _userModel);
+      //     } else {
+      //       throw Exception('Failed to load user data');
+      //     }
+      //   } else {
+      //     throw Exception('Failed to get user ID');
+      //   }
+      // } else {
+      //   print('User does not exist.');
+      //   await FirebaseAuth.instance
+      //       .setSettings(appVerificationDisabledForTesting: true);
+
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          print('Verification completed with credential: $credential');
+          await _auth.signInWithCredential(credential).then((value) async {
+            _uid = value.user?.uid;
+            _phoneNumber = value.user?.phoneNumber;
+            _isLoading = false;
+            notifyListeners();
+          });
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          print('Verification failed: ${e.message}');
+          _isSuccessful = false;
+          _isLoading = false;
+          notifyListeners();
+          showSnackBar(context, e.toString());
+        },
+        codeSent: (String verificationId, int? resendToken) async {
+          print('Code sent. Verification ID: $verificationId');
+          _isLoading = false;
+          notifyListeners();
+
+          // Avoid duplicate navigation
+          if (!_hasNavigatedToOTP) {
+            Navigator.of(context).pushNamed(
+              Constants.OtpPage,
+              arguments: {
+                Constants.verificationId: verificationId,
+                Constants.phoneNumber: phoneNumber,
+              },
+            );
+            _hasNavigatedToOTP = true;
+
+            //onSuccess();
+            notifyListeners();
           }
-        } else {
-          throw Exception('Failed to get user ID');
-        }
-      } else {
-        print('User does not exist.');
-        await FirebaseAuth.instance
-            .setSettings(appVerificationDisabledForTesting: false);
-
-        await _auth.verifyPhoneNumber(
-          phoneNumber: phoneNumber,
-          verificationCompleted: (PhoneAuthCredential credential) async {
-            print('Verification completed with credential: $credential');
-            await _auth.signInWithCredential(credential).then((value) async {
-              _uid = value.user?.uid;
-              _phoneNumber = value.user?.phoneNumber;
-
-              _isSuccessful = true;
-              _isLoading = false;
-              notifyListeners();
-            });
-          },
-          verificationFailed: (FirebaseAuthException e) {
-            print('Verification failed: ${e.message}');
-            _isSuccessful = false;
-            _isLoading = false;
-            notifyListeners();
-            showSnackBar(context, e.toString());
-          },
-          codeSent: (String verificationId, int? resendToken) async {
-            print('Code sent. Verification ID: $verificationId');
-            _isSuccessful = true;
-            _isLoading = false;
-            notifyListeners();
-
-            // Avoid duplicate navigation
-            if (!_hasNavigatedToOTP) {
-              Navigator.of(context).pushNamed(
-                Constants.OtpPage,
-                arguments: {
-                  Constants.verificationId: verificationId,
-                  Constants.phoneNumber: phoneNumber,
-                },
-              );
-              _hasNavigatedToOTP = true;
-
-              //onSuccess();
-              notifyListeners();
-            }
-          },
-          codeAutoRetrievalTimeout: (String verificationId) {
-            print('Code auto-retrieval timeout');
-            _verificationId = verificationId;
-          },
-          //forceResendingToken: _resendToken,
-        );
-      }
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print('Code auto-retrieval timeout');
+          _verificationId = verificationId;
+        },
+        //forceResendingToken: _resendToken,
+      );
+      //}
     } catch (e) {
       print('Error during signInWithPhoneNumber: $e');
       _isLoading = false;
@@ -183,6 +181,7 @@ class AuthenticationProvider extends ChangeNotifier {
   }) async {
     print('Attempting to verify OTP');
 
+    _isSuccessful = false; // Reset success state
     _hasAttemptedVerification = true;
     _isLoading = true;
     notifyListeners();
@@ -216,9 +215,11 @@ class AuthenticationProvider extends ChangeNotifier {
 
           if (_userModel != null) {
             // Set current user in UserInfoProvider before navigation
-            context.read<UserInfoProvider>().setCurrentUser(_userModel!);
-            //_reinitializeProviders(context);
 
+            context.read<UserInfoProvider>().setCurrentUser(_userModel!);
+            _isSuccessful = true;
+
+            //_reinitializeProviders(context);
             // Navigate to home page for existing user
             navigation.handleUserLoginNavigation(
                 userExists: true, context: context, userModel: _userModel);
@@ -230,6 +231,7 @@ class AuthenticationProvider extends ChangeNotifier {
           // Navigate to user information page for new user
           navigation.navigateToUserInformation(
               context: context, uid: _uid!, phoneNumber: _phoneNumber!);
+          _isSuccessful = true;
         }
       }
 
@@ -243,84 +245,85 @@ class AuthenticationProvider extends ChangeNotifier {
       showSnackBar(context, e.toString());
     }
   }
-  // Future<void> resendOTP({
-  //   required String phoneNumber,
-  //   required BuildContext context,
-  // }) async {
-  //   // Ensure that the resend OTP process only begins if the resendToken is valid.
-  //   if (_resendToken != null) {
-  //     print('Attempting to resend OTP...');
 
-  //     _isLoading = true;
-  //     notifyListeners();
+  Future<void> resendOTP({
+    required String phoneNumber,
+    required BuildContext context,
+  }) async {
+    try {
+      _isSuccessful = false; // Reset success state
+      _isLoading = true;
+      notifyListeners();
 
-  //     try {
-  //       await _auth.verifyPhoneNumber(
-  //         phoneNumber: phoneNumber,
-  //         timeout: const Duration(seconds: 60),
-  //         forceResendingToken: _resendToken,
-  //         verificationCompleted: (PhoneAuthCredential credential) async {
-  //           // This callback is called automatically when the verification is completed successfully.
-  //           print('Verification completed with credential: $credential');
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        timeout: const Duration(seconds: 60),
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          print('Verification completed with credential: $credential');
+          await _auth.signInWithCredential(credential).then((value) async {
+            _uid = value.user?.uid;
+            _phoneNumber = value.user?.phoneNumber;
 
-  //           await _auth.signInWithCredential(credential).then((value) async {
-  //             _uid = value.user?.uid;
-  //             _phoneNumber = value.user?.phoneNumber;
+            // Check if user exists like in original flow
+            if (_phoneNumber != null) {
+              bool userExists = await _userService.checkUserExistsByPhone(
+                  Constants.users, _phoneNumber!);
 
-  //             final String? idToken = await _auth.currentUser?.getIdToken();
-  //             if (idToken != null) {
-  //               await _sessionManager.saveSession(idToken);
-  //               print('Session saved successfully.');
-  //             }
+              if (userExists) {
+                _userModel =
+                    await _userService.getUserData(Constants.users, _uid!);
+                if (_userModel != null) {
+                  context.read<UserInfoProvider>().setCurrentUser(_userModel!);
+                  _isSuccessful = true;
 
-  //             // Successful navigation after verification.
-  //             navigation.navigateToUserInformation(
-  //               context: context,
-  //               uid: _uid!,
-  //               phoneNumber: _phoneNumber!,
-  //             );
+                  navigation.handleUserLoginNavigation(
+                      userExists: true,
+                      context: context,
+                      userModel: _userModel);
+                }
+              } else {
+                navigation.navigateToUserInformation(
+                  context: context,
+                  uid: _uid!,
+                  phoneNumber: _phoneNumber!,
+                );
+              }
+            }
 
-  //             _isSuccessful = true;
-  //             _isLoading = false;
-  //             notifyListeners();
-  //           });
-  //         },
-  //         verificationFailed: (FirebaseAuthException e) {
-  //           // This callback is called if verification fails.
-  //           print('Verification failed: ${e.message}');
-  //           _isSuccessful = false;
-  //           _isLoading = false;
-  //           notifyListeners();
-  //           showSnackBar(context, 'Verification failed: ${e.message}');
-  //         },
-  //         codeSent: (String verificationId, int? resendToken) async {
-  //           // This callback is called after the OTP is successfully sent.
-  //           print('Resent code sent. Verification ID: $verificationId');
-  //           _verificationId = verificationId;
-  //           _resendToken = resendToken;
+            _isSuccessful = true;
+            _isLoading = false;
+            notifyListeners();
+          });
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          print('Verification failed: ${e.message}');
+          _isSuccessful = false;
+          _isLoading = false;
+          notifyListeners();
+          showSnackBar(context, 'Verification failed: ${e.message}');
+        },
+        codeSent: (String verificationId, int? resendToken) async {
+          print('Resent code sent. Verification ID: $verificationId');
+          _verificationId = verificationId;
+          _resendToken = resendToken;
+          _isLoading = false;
+          notifyListeners();
 
-  //           _isLoading = false;
-  //           notifyListeners();
-  //         },
-  //         codeAutoRetrievalTimeout: (String verificationId) {
-  //           // Timeout callback, sets the verificationId for manual verification.
-  //           print('Resent code auto-retrieval timeout');
-  //           _verificationId = verificationId;
-  //         },
-  //       );
-  //     } catch (e) {
-  //       // General catch for any unexpected errors during the resend process.
-  //       print('Error during resendOTP: $e');
-  //       _isLoading = false;
-  //       notifyListeners();
-  //       showSnackBar(context, 'Error while resending OTP: $e');
-  //     }
-  //   } else {
-  //     // If _resendToken is null, the OTP resend cannot proceed.
-  //     print('Resend token is null. Cannot resend OTP at this time.');
-  //     showSnackBar(context, 'Cannot resend OTP at this time.');
-  //   }
-  // }
+          showSnackBar(context, 'OTP code resent successfully');
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          print('Resent code auto-retrieval timeout');
+          _verificationId = verificationId;
+        },
+        forceResendingToken: _resendToken, // Uncomment this
+      );
+    } catch (e) {
+      print('Error during resendOTP: $e');
+      _isLoading = false;
+      notifyListeners();
+      showSnackBar(context, 'Error while resending OTP: $e');
+    }
+  }
 
   Future<void> logout(BuildContext context) async {
     if (!context.mounted) return;
@@ -338,6 +341,8 @@ class AuthenticationProvider extends ChangeNotifier {
           Provider.of<TicketProvider>(context, listen: false);
       final userInfoProvider =
           Provider.of<UserInfoProvider>(context, listen: false);
+      final locationProvider =
+          Provider.of<LocationProvider>(context, listen: false);
 
       // 2. Cancel any active subscriptions/listeners
       print('[AUTH] Canceling active subscriptions...');
@@ -345,7 +350,8 @@ class AuthenticationProvider extends ChangeNotifier {
         rideProvider.reset(),
         queueProvider.reset(),
         ticketProvider.reset(),
-        userInfoProvider.reset()
+        userInfoProvider.reset(),
+        locationProvider.reset(),
       ]);
 
       // // 3. Clear persistent storage

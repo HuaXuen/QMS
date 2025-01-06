@@ -10,7 +10,7 @@ class QueueService {
   final RideService _rideService;
   static const String _queueStatusPath = 'queueStatus';
   static const String _ridesPath = 'rides';
-  final bool _isTestMode = true;
+  final bool _isTestMode = false;
 
   QueueService(this._dbService, this._rideService) {
     print('[QUEUE] Initializing QueueService');
@@ -86,12 +86,20 @@ class QueueService {
       queueIds.add(userId);
       print('[QUEUE] Added userId to queue. New queue IDs: $queueIds');
 
-      final now = _isTestMode
-          ? DateTime(2024, 12, 31, 14, 0).millisecondsSinceEpoch
-          : DateTime.now().millisecondsSinceEpoch;
+      final now = _isTestMode ? DateTime(2025, 1, 1, 14, 0) : DateTime.now();
+
+      final nowUtc = DateTime.utc(
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
+        now.minute,
+        now.second,
+      );
       // Calculate wait time in minutes
-      final waitTimeMs = endAt - now;
+      final waitTimeMs = endAt - nowUtc.millisecondsSinceEpoch;
       final waitTime = waitTimeMs > 0 ? (waitTimeMs ~/ (1000 * 60)) : 0;
+      final joinQueueTimeUtc = nowUtc.millisecondsSinceEpoch;
 
       print('[QUEUE] Calculated wait time: $waitTime minutes');
 
@@ -104,22 +112,14 @@ class QueueService {
           startAt: startAt,
           endAt: endAt,
           waitTime: waitTime,
+          joinQueueTime: joinQueueTimeUtc, // Add new field
+
           status: 'waiting');
       print('[QUEUE] Created queue model: ${queueModel.toString()}');
 
       // Prepare the multi-path transaction
       final paths = [batchPath, '$_queueStatusPath/$userId/$rideId'];
       print('[QUEUE] Preparing transaction for paths: $paths');
-
-      final maxRiders = batchData['maxRiders'] ?? 0;
-
-      final isBatchFull = queueIds.length >= maxRiders;
-
-      final queueFilledAt = isBatchFull
-          ? DateTime.now().toUtc().toIso8601String()
-          : "Not Filled Up"; // Use null instead of "Not Filled Up" for cleaner data
-      print(
-          '[QUEUE] Queue capacity status - Current: ${queueIds.length}, Max: $maxRiders');
 
       final updates = {
         '$batchPath/queueIds': queueIds,
@@ -255,7 +255,7 @@ class QueueService {
           'hasConflict': true,
           'conflictingRide': existingQueue.rideName,
           'conflictTime':
-              '${_formatTime(conflictStart)} - ${_formatTime(conflictEnd)}'
+              '${_formatTime(conflictStart.toUtc())} - ${_formatTime(conflictEnd.toUtc())}'
         };
       }
     }

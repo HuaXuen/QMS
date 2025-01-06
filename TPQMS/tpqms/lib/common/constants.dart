@@ -16,6 +16,9 @@ class Constants {
   static const String RideManagementPage = '/ridemManagementPage';
   static const String QueuePage = '/queuePage';
   static const String ProfilePage = '/profilePage';
+  static const String TicketPage = '/ticketPage';
+  static const String MapPage = '/mapPage';
+  static const String TestNotificationPage = '/testNotificationPage';
 
 // constant variables
   static const String uid = 'uid';

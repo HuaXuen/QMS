@@ -1,139 +1,3 @@
-// /* eslint-disable @typescript-eslint/no-unused-vars */
-// import * as functions from "firebase-functions/v1";
-// import { getDatabase } from "./utils/database.js";
-// import admin from "firebase-admin";
-
-// export const generateDailyBatches = functions.pubsub
-//   .schedule("every day 00:00")
-//   .timeZone("Asia/Kuala_Lumpur")
-//   .onRun(async (context) => {
-//     const db = getDatabase(); // Use the helper function here
-//     const ridesRef = db.ref("rides");
-
-//     const ridesSnapshot = await ridesRef.once("value");
-//     const today = new Date();
-//     today.setHours(10, 0, 0, 0); // Start time: 10:00 AM
-
-//     const endHour = 18; // End time: 6 PM
-//     const promises = [];
-//     ridesSnapshot.forEach((rideSnapshot) => {
-//       const ride = rideSnapshot.val();
-//       const duration = ride.numOfRidersAllowed <= 5 ? 5 : 10; // Batch duration in minutes
-//       const batches = {};
-
-//       for (let hour = 10; hour < endHour; hour++) {
-//         for (let minute = 0; minute < 60; minute += duration) {
-//           const startAt = new Date(
-//             today.getTime() + (hour - 10) * 3600000 + minute * 60000
-//           );
-//           const endAt = new Date(startAt.getTime() + duration * 60000);
-//           const batchKey = startAt.toISOString().replace(/[:.]/g, "-");
-
-//           batches[batchKey] = {
-//             startAt: startAt.getTime(),
-//             endAt: endAt.getTime(),
-//             queueIds: ["empty"],
-//             status: "pending",
-//           };
-//         }
-//       }
-
-//       const batchPath = `rides/${rideSnapshot.key}/batches`;
-//       promises.push(
-//         db
-//           .ref(batchPath)
-//           .set(batches)
-//           .then(() => {
-//             console.log(`Batches generated for ride ${rideSnapshot.key}`);
-//           })
-//       );
-//     });
-
-//     await Promise.all(promises);
-//     console.log("Daily batch generation completed.");
-
-//     console.log("Daily batch generation completed.");
-//   });
-
-// export const cleanupAndArchiveBatches = functions.pubsub
-//   .schedule("every day 22:00")
-//   .timeZone("Asia/Kuala_Lumpur")
-//   .onRun(async (context) => {
-//     const db = getDatabase();
-//     const firestore = admin.firestore();
-//     const ridesRef = db.ref("rides");
-
-//     const now = new Date();
-//     const todayKey = now.toISOString().split("T")[0]; // e.g., "2024-12-25"
-
-//     const ridesSnapshot = await ridesRef.once("value");
-//     const promises = [];
-
-//     ridesSnapshot.forEach(async (rideSnapshot) => {
-//       const rideId = rideSnapshot.key;
-//       const rideData = rideSnapshot.val();
-
-//       const batchesSnapshot = await db
-//         .ref(`rides/${rideId}/batches`)
-//         .once("value");
-//       const batches = batchesSnapshot.val();
-
-//       // Aggregate analytics
-//       let totalVisitors = 0;
-//       let totalQueueTime = 0;
-//       let batchCount = 0;
-//       let busiestBatchStartTime = null;
-//       let maxVisitorsInBatch = 0;
-
-//       Object.entries(batches).forEach(([batchKey, batch]) => {
-//         const numVisitors = batch.queueIds.length - 1; // Exclude "empty"
-//         if (numVisitors > 0) {
-//           totalVisitors += numVisitors;
-//           totalQueueTime += (batch.endAt - batch.startAt) * numVisitors;
-//           batchCount++;
-
-//           // Check for the busiest batch
-//           if (numVisitors > maxVisitorsInBatch) {
-//             maxVisitorsInBatch = numVisitors;
-//             busiestBatchStartTime = batch.startAt;
-//           }
-//         }
-//       });
-
-//       const averageQueueTime =
-//         totalVisitors > 0 ? totalQueueTime / totalVisitors : 0;
-
-//       // Save analytics to Firestore
-//       promises.push(
-//         firestore
-//           .collection("rideAnalytics")
-//           .doc(rideId)
-//           .set(
-//             {
-//               [todayKey]: {
-//                 totalVisitors,
-//                 averageQueueTime,
-//                 totalQueueTime,
-//                 batchCount,
-//                 busiestBatchStartTime,
-//                 rideStatus: rideData.status,
-//                 createdAt: rideData.createdAt,
-//               },
-//             },
-//             { merge: true }
-//           )
-//           .then(async () => {
-//             // Remove batches from Realtime Database
-//             await db.ref(`rides/${rideId}/batches`).remove();
-//             console.log(`Archived and cleaned up batches for ride ${rideId}`);
-//           })
-//       );
-//     });
-
-//     await Promise.all(promises);
-//     console.log("Batch cleanup and archival completed.");
-//   });
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as functions from "firebase-functions/v1";
 import { getDatabase } from "./utils/database.js";
@@ -150,18 +14,17 @@ export const generateDailyBatches = async () => {
   // Revised date logic
   if (now.getHours() >= 18) {
     // After 6 PM, generate for next day
-    today.setDate(today.getDate() + 1);
-  } else if (now.getHours() < 10) {
+    today.setDate(today.getDate());
     // Before 10 AM, generate for current day
     // No date adjustment needed since we want today's batches
   } else {
     // Between 10 AM and 6 PM, generate for next day
-    today.setDate(today.getDate() + 1);
+    today.setDate(today.getDate());
   }
 
-  today.setHours(10, 0, 0, 0); // Start time: 10:00 AM (local time)
+  today.setHours(16, 0, 0, 0); // Start time: 10:00 AM (local time)
 
-  const endHour = 18; // End time: 6 PM (local time)
+  const endHour = 23; // End time: 6 PM (local time) 18 i changed to 23
   const promises = [];
   ridesSnapshot.forEach((rideSnapshot) => {
     const ride = rideSnapshot.val();
@@ -175,8 +38,8 @@ export const generateDailyBatches = async () => {
         );
         const endAt = new Date(startAt.getTime() + duration * 60000);
 
-        // Ensure batch does not exceed 6 PM
-        if (startAt.getHours() >= 18) break;
+        // Ensure batch does not exceed 6 PM 18 i changed to 23
+        if (startAt.getHours() >= 23) break;
 
         // Generate the batch key in local time
         const batchKey = `${startAt.getFullYear()}-${(startAt.getMonth() + 1)
@@ -224,11 +87,21 @@ export const cleanupAndArchiveBatches = async () => {
   const firestore = admin.firestore();
   const ridesRef = db.ref("rides");
 
+  const reportGenerationTime = new Date().toLocaleString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kuala_Lumpur",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
   const now = new Date();
-  const todayKey = now.toISOString().split("T")[0]; // e.g., "2024-12-25"
+  const todayKey = now.toISOString().split("T")[0];
 
   const ridesSnapshot = await ridesRef.once("value");
-  const rides = ridesSnapshot.val(); // Convert snapshot to an object
+  const rides = ridesSnapshot.val();
 
   if (!rides) {
     console.log("No rides found in the database.");
@@ -238,7 +111,7 @@ export const cleanupAndArchiveBatches = async () => {
   const promises = [];
 
   for (const [rideId, rideData] of Object.entries(rides)) {
-    const rideName = rideData.name?.replace(/[^a-zA-Z0-9_-]/g, "_"); // Sanitize ride name
+    const rideName = rideData.name?.replace(/[^a-zA-Z0-9_-]/g, "_");
 
     if (!rideName) {
       console.error(`Ride ${rideId} has no valid name. Skipping.`);
@@ -250,127 +123,230 @@ export const cleanupAndArchiveBatches = async () => {
       .once("value");
     const batches = batchesSnapshot.val();
 
+    // Initialize analytics metrics
+    let analyticsData = {
+      timeOfReportGeneration: reportGenerationTime, // e.g. "Dec 23, 2024, 10:30 PM"
+      totalVisitors: 0,
+      averageQueueTime: "N/A",
+      nonCompletedBatchCount: 0,
+      nonCompletedBatchTimes: [],
+      nonFilledBatchCount: 0,
+      nonFilledBatchIds: [],
+      busiestBatchStartTime: "N/A",
+      rideStatus: rideData.status || "unknown",
+      fastestCompletionTime: null,
+      // New fields for operators and batch statuses
+      operators: new Set(), // We'll convert this to array later
+      batchStatusSummary: {
+        pending: 0,
+        completed: 0,
+        failed: 0,
+        other: 0,
+        statusList: [], // Will store all batch statuses with their timestamps
+      },
+    };
+
     if (!batches) {
-      console.log(`No batches found for ride ${rideId}. Logging as N/A.`);
+      // Convert Set to Array before saving
+      analyticsData.operators = Array.from(analyticsData.operators);
       promises.push(
         firestore
           .collection("rideAnalytics")
           .doc(`${rideName}_${todayKey}`)
-          .set(
-            {
-              [todayKey]: {
-                totalVisitors: 0,
-                averageQueueTime: "N/A",
-                totalQueueTime: "N/A",
-                batchCount: 0,
-                nonCompletedBatchCount: 0,
-                nonCompletedBatchTimes: [],
-                busiestBatchStartTime: "N/A",
-                rideStatus: rideData.status,
-                createdAt: rideData.createdAt,
-                operatorDelay: "N/A",
-                notes:
-                  "N/A (ride was likely closed when analytics was generated)",
-              },
-            },
-            { merge: true }
-          )
+          .set({ [todayKey]: analyticsData }, { merge: true })
       );
       continue;
     }
 
-    // Initialize analytics fields
-    let totalVisitors = 0;
     let totalQueueTime = 0;
-    let batchCount = 0;
-    let nonCompletedBatchCount = 0;
-    let nonCompletedBatchTimes = [];
-    let busiestBatchStartTime = null;
-    let maxVisitorsInBatch = 0;
-    let operatorDelay = 0;
+    let totalProcessedVisitors = 0;
+    let fastestCompletionTime = Infinity;
+    let fastestBatchStartTime = null;
 
     Object.entries(batches).forEach(([batchKey, batch]) => {
-      const numVisitors = Array.isArray(batch.queueIds)
-        ? batch.queueIds.length - 1 // Exclude "empty"
+      // Track batch statuses with original batch keys
+      const batchStatusEntry = {
+        batchKey: batchKey, // Original batch key e.g. "2025-01-01T13-00-00"
+        status: batch.batchStatus || "unknown",
+        completedBy: batch.completedBy || null, // Include operator ID if available
+      };
+      analyticsData.batchStatusSummary.statusList.push(batchStatusEntry);
+
+      // Update batch status counts
+      switch (batch.batchStatus?.toLowerCase()) {
+        case "pending":
+          analyticsData.batchStatusSummary.pending++;
+          break;
+        case "completed":
+          analyticsData.batchStatusSummary.completed++;
+          break;
+        case "failed":
+          analyticsData.batchStatusSummary.failed++;
+          break;
+        default:
+          analyticsData.batchStatusSummary.other++;
+      }
+
+      // Existing analytics calculations
+      const visitorCount = Array.isArray(batch.queueIds)
+        ? batch.queueIds.filter((id) => id !== "empty").length
         : 0;
+      analyticsData.totalVisitors += visitorCount;
 
-      const validTimeTakenToComplete =
-        batch.timeTakenToComplete > 0
-          ? batch.timeTakenToComplete
-          : batch.endAt - batch.startAt;
-
-      // Handle completedAt = 0
       if (batch.completedAt === 0) {
-        nonCompletedBatchCount++;
-        nonCompletedBatchTimes.push(batchKey); // Use batchKey as timestamp
-        console.log(`Batch ${batchKey} marked as N/A for completion.`);
-        return;
+        analyticsData.nonCompletedBatchCount++;
+        const batchTime = new Date(batch.startAt).toLocaleString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Asia/Kuala_Lumpur",
+        });
+        analyticsData.nonCompletedBatchTimes.push(batchTime);
       }
 
-      // Handle queueFilledAt = "Not Filled Up"
       if (batch.queueFilledAt === "Not Filled Up") {
-        nonCompletedBatchCount++;
-        nonCompletedBatchTimes.push(batchKey);
-        console.log(`Batch ${batchKey} had queue status: Not Filled Up.`);
-        return;
+        analyticsData.nonFilledBatchCount++;
+        analyticsData.nonFilledBatchIds.push(batchKey);
       }
 
-      // Aggregate valid data for analytics
-      totalVisitors += numVisitors;
-      totalQueueTime += validTimeTakenToComplete * numVisitors;
-      batchCount++;
+      if (batch.completedAt && batch.completedAt !== 0) {
+        const completionTime = batch.completedAt - batch.startAt;
+        if (completionTime < fastestCompletionTime) {
+          fastestCompletionTime = completionTime;
+          fastestBatchStartTime = new Date(batch.startAt).toLocaleString(
+            "en-US",
+            {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+              timeZone: "Asia/Kuala_Lumpur",
+            }
+          );
+        }
 
-      // Calculate operator delay
-      const delay = batch.completedAt - batch.endAt;
-      if (delay > 0) {
-        operatorDelay += delay;
-      }
-
-      // Check for the busiest batch
-      if (numVisitors > maxVisitorsInBatch) {
-        maxVisitorsInBatch = numVisitors;
-        busiestBatchStartTime = batch.startAt;
+        totalQueueTime += completionTime;
+        totalProcessedVisitors += visitorCount;
       }
     });
 
-    // Calculate average queue time and operator delay
-    const averageQueueTime =
-      totalVisitors > 0 ? totalQueueTime / totalVisitors : "N/A";
-    const averageOperatorDelay =
-      operatorDelay > 0 && batchCount > 0 ? operatorDelay / batchCount : "N/A";
+    // Convert Set to Array before saving
+    analyticsData.operators = Array.from(analyticsData.operators);
 
-    // Save analytics to Firestore
+    analyticsData.busiestBatchStartTime = fastestBatchStartTime || "N/A";
+    analyticsData.averageQueueTime =
+      totalProcessedVisitors > 0
+        ? `${Math.round(
+            totalQueueTime / totalProcessedVisitors / 1000 / 60
+          )} minutes`
+        : "N/A";
+
     promises.push(
-      firestore
-        .collection("rideAnalytics")
-        .doc(`${rideName}_${todayKey}`)
-        .set(
-          {
-            [todayKey]: {
-              totalVisitors,
-              averageQueueTime,
-              totalQueueTime,
-              batchCount,
-              nonCompletedBatchCount,
-              nonCompletedBatchTimes,
-              busiestBatchStartTime,
-              rideStatus: rideData.status,
-              createdAt: rideData.createdAt,
-              operatorDelay: averageOperatorDelay,
-            },
-          },
-          { merge: true }
-        )
-        .then(async () => {
-          // Remove batches from Realtime Database
-          await db.ref(`rides/${rideId}/batches`).remove();
-          console.log(
-            `Archived and cleaned up batches for ride ${rideName} on ${todayKey}`
-          );
-        })
+      Promise.all([
+        firestore
+          .collection("rideAnalytics")
+          .doc(`${rideName}_${todayKey}`)
+          .set({ [todayKey]: analyticsData }, { merge: true }),
+
+        db.ref(`rides/${rideId}/batches`).remove(),
+      ])
     );
+
+    console.log(`Processed analytics for ride: ${rideName}`);
   }
 
   await Promise.all(promises);
-  console.log("Batch cleanup and archival completed.");
+  console.log("Batch cleanup and analytics archival completed.");
 };
+
+import { nanoid } from "nanoid/non-secure";
+
+export async function generateDummyBatchData(rideId, adminId) {
+  const db = getDatabase();
+
+  try {
+    // Set up time range for January 4th, 2025 (10 AM to 11 PM)
+    const baseDate = new Date("2025-01-03T10:00:00");
+    const endTime = new Date("2025-01-03T23:00:00");
+    const batchInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+    const batches = {};
+    const currentTime = new Date(baseDate);
+
+    // Helper function to determine visitors based on time of day
+    function getVisitorCountForTime(hour) {
+      // Peak hours (12 PM - 4 PM)
+      if (hour >= 12 && hour < 16) {
+        return Math.floor(Math.random() * 4) + 7; // 7-10 visitors
+      }
+      // High traffic (4 PM - 8 PM)
+      else if (hour >= 16 && hour < 20) {
+        return Math.floor(Math.random() * 4) + 6; // 6-9 visitors
+      }
+      // Morning/Late Night (10 AM - 12 PM, 8 PM - 11 PM)
+      else {
+        return Math.floor(Math.random() * 4) + 3; // 3-6 visitors
+      }
+    }
+
+    // Helper function to determine if batch should be completed (90% chance)
+    function shouldComplete() {
+      return Math.random() < 0.9;
+    }
+
+    // Generate batches
+    while (currentTime < endTime) {
+      const batchKey = currentTime
+        .toISOString()
+        .replace(/\.\d+Z$/, "")
+        .replace(/:/g, "-")
+        .slice(0, 19);
+
+      const hour = currentTime.getHours();
+      const visitorCount = getVisitorCountForTime(hour);
+
+      // Generate unique IDs for visitors
+      const queueIds = Array.from({ length: visitorCount }, () => nanoid());
+      if (queueIds.length === 0) queueIds.push("empty");
+
+      const startAt = currentTime.getTime();
+      const endAt = startAt + batchInterval;
+
+      // Determine if batch should be completed
+      const isCompleted = shouldComplete();
+      const completedAt = isCompleted ? endAt + Math.random() * 60000 : 0; // Random completion time within 1 minute after endAt
+
+      batches[batchKey] = {
+        startAt,
+        endAt,
+        queueIds,
+        batchStatus: isCompleted ? "completed" : "pending",
+        completedAt: completedAt,
+        queueFilledAt:
+          queueIds.length >= 10
+            ? new Date(startAt - Math.random() * 300000).toISOString() // Random time within 5 minutes before start
+            : "Not Filled Up",
+        completedBy: isCompleted ? adminId : null,
+      };
+
+      currentTime.setTime(currentTime.getTime() + batchInterval);
+    }
+
+    // Save batches to database
+    await db.ref(`rides/${rideId}/batches`).set(batches);
+    console.log(
+      `Generated ${Object.keys(batches).length} batches for ride ${rideId}`
+    );
+    return batches;
+  } catch (error) {
+    console.error("Error generating dummy batch data:", error);
+    throw error;
+  }
+}
+// Example usage:
+/*
+const dummyBatches = await generateDummyBatchData(
+  'ride123', 
+  'AhHJrLqC2b3TqMHSOBAU'
+);
+console.log(JSON.stringify(dummyBatches, null, 2));
+*/

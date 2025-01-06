@@ -130,6 +130,7 @@ class _RideDetailsPageState extends State<RideDetailsPage> {
         batchId: _selectedBatchInfo!.batch.id,
         startAt: _selectedBatchInfo!.batch.startAt,
         endAt: _selectedBatchInfo!.batch.endAt,
+        context: context,
       )
           .timeout(Duration(seconds: 8), onTimeout: () {
         print('⏰ Queue operation timed out');

@@ -21,6 +21,9 @@ export async function addRideAndBatches(data) {
       queueTime,
       numOfRidersAllowed,
       createdAt,
+      latitude,
+      longitude,
+      radiusInMeters,
     } = data.data; // Access the fields from the `data` object
 
     // Validate required fields
@@ -32,6 +35,9 @@ export async function addRideAndBatches(data) {
       "queueTime",
       "numOfRidersAllowed",
       "createdAt",
+      "latitude",
+      "longitude",
+      "radiusInMeters",
     ];
     for (const field of requiredFields) {
       if (!data.data[field]) {
@@ -56,6 +62,9 @@ export async function addRideAndBatches(data) {
       numOfRidersAllowed,
       currentBatchId: "",
       createdAt,
+      latitude,
+      longitude,
+      radiusInMeters,
     });
 
     // Step 2: Generate All Batches for Operating Hours

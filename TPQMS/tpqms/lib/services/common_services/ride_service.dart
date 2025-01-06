@@ -102,6 +102,19 @@ class RideService {
     return await _fetchBatchesForRide(rideId);
   }
 
+  Future<BatchModel> getBatchById(String rideId, String batchId) async {
+    try {
+      final data = await _dbService.read('rides/$rideId/batches/$batchId');
+      if (data != null) {
+        return BatchModel.fromMap(batchId, Map<String, dynamic>.from(data));
+      }
+      throw Exception('Batch not found for notification');
+    } catch (e) {
+      print('Error getting batch by ID: $e');
+      throw Exception('Failed to get batch: $e');
+    }
+  }
+
   // Stream batches for a ride
   Stream<List<BatchModel>> streamBatches(String rideId) {
     final batchPath = '${Constants.ridesDbRoute}/$rideId/batches';
@@ -124,15 +137,17 @@ class RideService {
     });
   }
 
-  Future<String?> addRide({
-    required String name,
-    required String category,
-    required String status,
-    required int heightRequirement,
-    required int queueTime,
-    required int numOfRidersAllowed,
-    required DateTime createdAt,
-  }) async {
+  Future<String?> addRide(
+      {required String name,
+      required String category,
+      required String status,
+      required int heightRequirement,
+      required int queueTime,
+      required int numOfRidersAllowed,
+      required DateTime createdAt,
+      required double latitude,
+      required double longitude,
+      required double radiusInMeters}) async {
     try {
       // Step 1: Prepare the ride data
       final newRide = {
@@ -143,6 +158,9 @@ class RideService {
         'queueTime': queueTime,
         'numOfRidersAllowed': numOfRidersAllowed,
         'createdAt': createdAt.millisecondsSinceEpoch,
+        'latitude': latitude,
+        'longitude': longitude,
+        'radiusInMeters': radiusInMeters,
       };
 
       // Log the prepared data

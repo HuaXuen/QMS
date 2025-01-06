@@ -40,6 +40,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+         manifestPlaceholders = [
+            MAPS_API_KEY: "AIzaSyBgU-SDaZM8B5D3OOcb5KITsBW05TBMXVk"
+        ]
     }
 
     buildTypes {

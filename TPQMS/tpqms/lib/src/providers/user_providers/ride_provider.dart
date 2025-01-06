@@ -13,7 +13,7 @@ class RideProvider extends ChangeNotifier {
   bool _isLoading = false;
   StreamSubscription<List<RideModel>>? _ridesSubscription;
   final RealtimeDbService _realtimeDbService;
-  bool _isTestMode = true; // Add this flag
+  bool _isTestMode = false; // Add this flag
   Map<String, RideModel> _rideState = {}; // Use map for better state management
 
   RideProvider(this._rideService, this._realtimeDbService) {
@@ -188,6 +188,9 @@ class RideProvider extends ChangeNotifier {
     required int heightRequirement,
     required int queueTime,
     required int numOfRidersAllowed,
+    required double latitude,
+    required double longitude,
+    required double radiusInMeters,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -203,6 +206,9 @@ class RideProvider extends ChangeNotifier {
         queueTime: queueTime,
         numOfRidersAllowed: numOfRidersAllowed,
         createdAt: DateTime.now(),
+        latitude: latitude,
+        longitude: longitude,
+        radiusInMeters: radiusInMeters,
       );
       print('Ride added successfully: $rideId');
       _isLoading = false;
@@ -272,8 +278,7 @@ class RideProvider extends ChangeNotifier {
       }
 
       await for (final batches in _rideService.streamBatches(rideId)) {
-        final now =
-            _isTestMode ? DateTime(2024, 12, 31, 14, 0) : DateTime.now();
+        final now = _isTestMode ? DateTime(2025, 1, 1, 14, 0) : DateTime.now();
 
         //now = DateTime.now();
         final nowUtc = DateTime.utc(
@@ -295,11 +300,11 @@ class RideProvider extends ChangeNotifier {
         print('Current time (UTC): $nowUtc, End of hour (UTC): $endOfHour');
 
         // Log all batches fetched from the service
-        print('Processing batches. Current time: $nowUtc');
-        for (var batch in batches) {
-          print(
-              'Batch ${batch.id}: startAt=${batch.startAt}, endAt=${batch.endAt}');
-        }
+        // print('Processing batches. Current time: $nowUtc');
+        // for (var batch in batches) {
+        //   print(
+        //       'Batch ${batch.id}: startAt=${batch.startAt}, endAt=${batch.endAt}');
+        // }
 
         final filteredBatches = batches.where((batch) {
           final startTime =
