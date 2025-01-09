@@ -130,6 +130,7 @@ class _RideDetailsPageState extends State<RideDetailsPage> {
         batchId: _selectedBatchInfo!.batch.id,
         startAt: _selectedBatchInfo!.batch.startAt,
         endAt: _selectedBatchInfo!.batch.endAt,
+        context: context,
       )
           .timeout(Duration(seconds: 8), onTimeout: () {
         print('⏰ Queue operation timed out');
@@ -187,14 +188,25 @@ class _RideDetailsPageState extends State<RideDetailsPage> {
       builder: (context, queueSnapshot) {
         final isAlreadyQueued = queueSnapshot.hasData;
 
+        // Create the timeslots with their full status
         List<String> timeslots = batches.map((batch) {
           final startTime =
               DateTime.fromMillisecondsSinceEpoch(batch.startAt).toUtc();
           final endTime =
               DateTime.fromMillisecondsSinceEpoch(batch.endAt).toUtc();
-          return '${DateFormat('h:mm a').format(startTime)} - ${DateFormat('h:mm a').format(endTime)}';
+          final baseTimeString =
+              '${DateFormat('h:mm a').format(startTime)} - ${DateFormat('h:mm a').format(endTime)}';
+
+          // Check both conditions for a full batch
+          final isFull = batch.queueFilledAt != 'Not Filled Up' ||
+              batch.queueIds.length >= widget.ride.numOfRidersAllowed;
+
+          // Return the time string with (FULL) suffix if needed
+          return isFull ? '$baseTimeString (FULL)' : baseTimeString;
         }).toList();
 
+        // Create batch info objects that maintain the relationship between
+        // displayed strings and actual batch objects
         List<SelectedBatchInfo> batchInfos = List.generate(
           batches.length,
           (index) => SelectedBatchInfo(
@@ -204,9 +216,17 @@ class _RideDetailsPageState extends State<RideDetailsPage> {
         );
 
         return CustomPopupMenu(
-          value: _selectedBatchInfo?.displayString ?? timeslots.first,
+          // If no selection yet, use first non-full batch as default
+          value: _selectedBatchInfo?.displayString ??
+              timeslots.firstWhere((slot) => !slot.contains('(FULL)'),
+                  orElse: () => timeslots.first),
           items: timeslots,
           onSelected: (value) {
+            // Don't allow selection of full batches
+            if (value.contains('(FULL)')) {
+              return;
+            }
+
             final selectedIndex = timeslots.indexOf(value);
             setState(() => _selectedBatchInfo = batchInfos[selectedIndex]);
           },
@@ -214,13 +234,25 @@ class _RideDetailsPageState extends State<RideDetailsPage> {
           onOpened: () {},
           onCanceled: () {},
           labelTextColor: Constants.black,
-          itemTextColor: isAlreadyQueued ? Colors.grey : Constants.black,
+          // Use black text for available batches, red for full ones
+          itemTextColor: (timeslots.any((slot) => slot.contains('(FULL)')))
+              ? Colors.red
+              : (isAlreadyQueued ? Colors.grey : Constants.black),
           containerBackgroundColor: Constants.white,
           containerBorderColorDefault: Constants.darkGrey,
           containerBorderColorOpen: Constants.grey,
           dropdownArrowColor: Constants.black,
           menuBackgroundColor: Constants.white,
           selectedValueTextColor: Constants.black,
+          itemBuilder: (context, item) {
+            final isFull = item.contains('(FULL)');
+            return Text(
+              item,
+              style: TextStyle(
+                color: isFull ? Colors.red : Constants.black,
+              ),
+            );
+          },
         );
       },
     );
@@ -336,7 +368,7 @@ class _RideDetailsPageState extends State<RideDetailsPage> {
                         ),
                         const SizedBox(height: 15),
                         const Text(
-                          'Available Timeslots:',
+                          'Available Timeslots for Queuing:',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

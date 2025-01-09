@@ -117,6 +117,16 @@ class TicketService {
     }
   }
 
+  Future<int> getMissedQueue(String userId) async {
+    try {
+      final ticket = await getTicketByUserId(userId);
+      return ticket?.missedQueue ?? 0;
+    } catch (e) {
+      print('Error getting missed queues: $e');
+      return 0;
+    }
+  }
+
   /// Updates the ridesQueued count for a ticket
   /// [change] can be +1 (when queuing) or -1 (when dequeuing)
   Future<void> updateRidesQueued(String ticketId, int change) async {

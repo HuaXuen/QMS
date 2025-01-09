@@ -28,9 +28,9 @@ class _OTPScreenState extends State<OTPPage> {
   @override
   Widget build(BuildContext context) {
     //get the arguments
-    final args = ModalRoute.of(context)!.settings.arguments as Map;
-    final verificationId = args[Constants.verificationId] as String;
-    final phoneNumber = args[Constants.phoneNumber] as String;
+    final args = ModalRoute.of(context)?.settings.arguments as Map?;
+    final verificationId = args?[Constants.verificationId] as String? ?? '';
+    final phoneNumber = args?[Constants.phoneNumber] as String? ?? '';
 
     final _authProvider = context.watch<AuthenticationProvider>();
 
@@ -142,24 +142,22 @@ class _OTPScreenState extends State<OTPPage> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  _authProvider.isLoading
-                      ? const CircularProgressIndicator()
-                      : const SizedBox.shrink(),
-                  _authProvider.isSuccessful
-                      ? Container(
-                          height: 50,
-                          width: 50,
-                          decoration: const BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.done,
-                            color: Constants.white,
-                            size: 30,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
+                  if (_authProvider.isLoading)
+                    const CircularProgressIndicator()
+                  else if (_authProvider.isSuccessful)
+                    Container(
+                      height: 50,
+                      width: 50,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.done,
+                        color: Constants.white,
+                        size: 30,
+                      ),
+                    ),
                   _authProvider.hasAttemptedVerification &&
                           !_authProvider.isSuccessful &&
                           !_authProvider.isLoading
@@ -186,8 +184,8 @@ class _OTPScreenState extends State<OTPPage> {
                   const SizedBox(height: 5),
                   TextButton(
                     onPressed: () async {
-                      // await _authProvider.resendOTP(
-                      //     phoneNumber: phoneNumber, context: context);
+                      await _authProvider.resendOTP(
+                          phoneNumber: phoneNumber, context: context);
                     },
                     child: Text(
                       'Resend Code',

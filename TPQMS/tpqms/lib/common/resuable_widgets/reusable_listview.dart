@@ -29,19 +29,18 @@ class ReusableListView<T> extends StatelessWidget {
           Center(
             child: Text(
               emptyMessage!,
-              style: TextStyle(color: Colors.grey, fontSize: 18),
+              style: TextStyle(color: Colors.black, fontSize: 18),
             ),
           );
     }
 
     return ListView.separated(
-      padding: padding,
-      physics: physics,
-      itemCount: items.length,
-      separatorBuilder: (context, index) =>
-          showDividers ? const Divider() : const SizedBox.shrink(),
-      itemBuilder: (context, index) => itemBuilder(items[index]),
-    );
+        padding: padding,
+        physics: physics,
+        itemCount: items.length,
+        separatorBuilder: (context, index) =>
+            showDividers ? const Divider() : const SizedBox.shrink(),
+        itemBuilder: (context, index) => itemBuilder(items[index]));
   }
 }
 

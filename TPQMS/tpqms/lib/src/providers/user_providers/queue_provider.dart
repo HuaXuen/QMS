@@ -2,32 +2,93 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:tpqms/services/common_services/location_service.dart';
+import 'package:tpqms/services/common_services/notification_service.dart';
 import 'package:tpqms/services/common_services/queue_service.dart';
+import 'package:tpqms/services/common_services/ride_service.dart';
 import 'package:tpqms/services/common_services/ticket_service.dart';
 import 'package:tpqms/services/common_services/user_service.dart';
+import 'package:tpqms/src/model/batch_model.dart';
 import 'package:tpqms/src/model/queue_model.dart';
+import 'package:tpqms/src/model/ride_model.dart';
+import 'package:tpqms/src/providers/user_providers/location_provider.dart';
 
 class QueueProvider extends ChangeNotifier {
   final QueueService _queueService;
   final TicketService _ticketService;
   final UserService _userService;
+  final RideService _rideService;
+  final NotificationService _notificationService;
+  final LocationProvider _locationProvider; // Injected dependency
 
   bool _isLoading = false;
   List<QueueModel> _currentQueues = [];
   String? _error;
   Stream<List<QueueModel>>? _queueStream;
   StreamSubscription? _queueSubscription; // Add this
-
+  bool _initializing = true; // Add this flag
   // Getters
   bool get isLoading => _isLoading;
   List<QueueModel> get currentQueues => _currentQueues;
   String? get error => _error;
   Stream<List<QueueModel>>? get queueStream => _queueStream;
   int get queueCount => _currentQueues.length;
+  bool get initializing => _initializing;
 
-  QueueProvider(this._queueService, this._ticketService, this._userService) {
+  QueueProvider(this._queueService, this._ticketService, this._userService,
+      this._rideService, this._notificationService, this._locationProvider) {
     print('[QUEUE-PROVIDER] Initializing QueueProvider');
-    initializeQueueStream();
+  }
+
+  Future<String?> getCurrentUserId() async {
+    try {
+      return await _userService.getCurrentUserUid();
+    } catch (e) {
+      print('[QUEUE-PROVIDER] Error getting current user ID: $e');
+      return null;
+    }
+  }
+
+  /// Explicitly initialize the provider for a specific user
+  Future<void> initializeForUser(String userId) async {
+    print(
+        '[QUEUE-PROVIDER] Explicitly initializing provider for user: $userId');
+    _initializing = true;
+    notifyListeners();
+    try {
+      // Clean up any existing subscriptions first
+      await _queueSubscription?.cancel();
+      _queueSubscription = null;
+      _currentQueues = [];
+
+      // Set up new stream
+      print('[QUEUE-PROVIDER] Setting up queue stream for user: $userId');
+      _queueStream = _queueService.getUserQueues(userId);
+
+      print('[QUEUE-PROVIDER] Attaching stream listener');
+      _queueSubscription = _queueStream?.listen((queues) {
+        print(
+            '[QUEUE-PROVIDER] Queue update received - Count: ${queues.length}');
+        _currentQueues = queues;
+        _initializing = false;
+
+        notifyListeners();
+      }, onError: (error) {
+        print('[QUEUE-PROVIDER] ERROR in queue stream: $error');
+        _error = 'Failed to receive queue updates';
+        _initializing = false;
+
+        notifyListeners();
+      });
+    } catch (e) {
+      print('[QUEUE-PROVIDER] ERROR initializing for user: $e');
+      _error = 'Failed to initialize queue stream';
+      _initializing = false;
+
+      notifyListeners();
+      rethrow;
+    }
   }
 
   /// Initializes the stream of queues for the current user
@@ -79,6 +140,7 @@ class QueueProvider extends ChangeNotifier {
     required String batchId,
     required int startAt,
     required int endAt,
+    required BuildContext context, // Add this parameter
   }) async {
     print('[QUEUE-PROVIDER] Starting queueForRide operation');
     print('[QUEUE-PROVIDER] Parameters:');
@@ -111,6 +173,16 @@ class QueueProvider extends ChangeNotifier {
         throw Exception('Maximum number of rides queued (2) reached');
       }
 
+      print('\n🎫 Checking Queue Limits...');
+      final ridesMissed = await _ticketService.getMissedQueue(userId);
+      print('Current Rides Queued: $ridesQueued');
+
+      if (ridesMissed >= 3) {
+        print('❌ Missed queue limit reached!');
+        throw Exception(
+            'You have missed 3 queues already, please contact admin. You can only queue manually from now on.');
+      }
+
       print('\n🎟️ Validating Ticket...');
       final ticket = await _ticketService.getTicketByUserId(userId);
       print('Ticket Status: ${ticket != null ? "Found" : "Not Found"}');
@@ -141,6 +213,18 @@ class QueueProvider extends ChangeNotifier {
 
       if (result['success']) {
         print('\n✨ Queue Successful! Updating ticket count...');
+        final ride = await _rideService.getRideById(rideId);
+        final batch = await _rideService.getBatchById(rideId, batchId);
+        if (ride != null) {
+          await _notificationService.scheduleRideNotification(
+            ride,
+            batch,
+            const Duration(minutes: 1),
+          );
+          await _notificationService.sendImmediateEnqueueNotification(
+              ride, batch);
+        }
+        await _locationProvider.startMonitoringRide(ride!); // Add this
         await _ticketService.updateRidesQueued(ticket.ticketId, 1);
         print('✅ Ticket count updated successfully');
       }
@@ -166,6 +250,7 @@ class QueueProvider extends ChangeNotifier {
   Future<Map<String, dynamic>> dequeueFromRide({
     required String rideId,
     required String batchId,
+    required BuildContext context,
   }) async {
     print('[QUEUE-PROVIDER] Starting dequeueFromRide operation');
     print('[QUEUE-PROVIDER] Parameters:');
@@ -199,14 +284,23 @@ class QueueProvider extends ChangeNotifier {
         rideId: rideId,
         batchId: batchId,
       );
+      final ride = await _rideService.getRideById(rideId);
+      final batch = await _rideService.getBatchById(rideId, batchId);
 
       print('[QUEUE-PROVIDER] Dequeue attempt result: $result');
 
       if (result['success']) {
+        await _locationProvider.stopMonitoringRide(rideId);
+        print(
+            '[QUEUE-PROVIDER] Stopped monitoring, updating ticket rides count');
         print(
             '[QUEUE-PROVIDER] Dequeue successful, updating ticket rides count');
+        await _notificationService.cancelRideNotification(batch);
+        print('[QUEUE-PROVIDER] Notification cancelled successfully');
         await _ticketService.updateRidesQueued(ticket.ticketId, -1);
         print('[QUEUE-PROVIDER] Ticket updated successfully');
+        await _notificationService.sendImmediateDequeueNotification(
+            ride!, batch);
       }
 
       _setLoading(false);
@@ -240,6 +334,60 @@ class QueueProvider extends ChangeNotifier {
     }
   }
 
+  // Add this method for testing
+  // Future<void> testNotification(RideModel ride, BatchModel batch) async {
+  //   final success = await _locationService.scheduleRideNotification(
+  //     ride,
+  //     batch,
+  //     const Duration(minutes: 1), // Test with 1 minute for quick feedback
+  //   );
+
+  //   if (success) {
+  //     print('Test notification scheduled successfully');
+  //   } else {
+  //     print('Failed to schedule test notification');
+  //   }
+  // }
+
+  // New method to refresh wait times for all current queues
+  Future<void> refreshQueueWaitTimes() async {
+    print('[QUEUE-PROVIDER] Refreshing queue wait times');
+    try {
+      _setLoading(true);
+
+      // Get current queues - no need to fetch from database since we're just
+      // recalculating wait times based on current time
+      _currentQueues = _currentQueues.map((queue) {
+        // Create a new queue model with updated wait time
+        final currentWaitTime = queue.calculateCurrentWaitTime();
+        return QueueModel(
+          userId: queue.userId,
+          rideId: queue.rideId,
+          rideName: queue.rideName,
+          batchId: queue.batchId,
+          startAt: queue.startAt,
+          endAt: queue.endAt,
+          joinQueueTime: queue.joinQueueTime,
+          waitTime: currentWaitTime, // Update the wait time
+          status: queue.status,
+        );
+      }).toList();
+
+      notifyListeners();
+    } catch (e) {
+      print('[QUEUE-PROVIDER] Error refreshing wait times: $e');
+      _handleError('Failed to refresh wait times');
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Method to be called when queue page is opened
+  Future<void> onQueuePageOpened() async {
+    print('[QUEUE-PROVIDER] Queue page opened, refreshing data');
+    await refreshQueueWaitTimes();
+  }
+
   // Helper methods for state management
   void _setLoading(bool loading) {
     print('[QUEUE-PROVIDER] Setting loading state to: $loading');
@@ -265,6 +413,8 @@ class QueueProvider extends ChangeNotifier {
   @override
   void dispose() {
     _queueSubscription?.cancel();
+    _queueSubscription = null;
+    _currentQueues.clear();
     super.dispose();
   }
 
@@ -276,21 +426,27 @@ class QueueProvider extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  // Example for RideProvider
+  // Modify the reset method to be more thorough
   Future<void> reset() async {
     try {
-      print('[QUEUE-PROVIDER] Starting reset...');
+      print('[QUEUE-PROVIDER] Starting complete reset...');
 
+      // Cancel existing subscription
       await _queueSubscription?.cancel();
+      _queueSubscription = null;
+
+      // Clear all state
       _queueStream = null;
       _currentQueues = [];
       _error = null;
-      // Notify listeners AFTER cleanup
-      notifyListeners();
+      _isLoading = false;
 
-      print('[QUEUE-PROVIDER] Reset completed');
+      notifyListeners();
+      print('[QUEUE-PROVIDER] Reset completed successfully');
     } catch (e) {
       print('[QUEUE-PROVIDER] Error during reset: $e');
+      _error = 'Failed to reset provider';
+      notifyListeners();
     }
   }
 }

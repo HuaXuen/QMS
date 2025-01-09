@@ -147,6 +147,13 @@ class _ProfilePageState extends State<ProfilePage> {
         appBar: CustomAppBar(
           title: 'My Profile',
           backgroundColor: Constants.purple,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _handleLogout,
+              color: Constants.white,
+            ),
+          ],
         ),
         body: SingleChildScrollView(
           controller: _scrollController,
@@ -158,8 +165,13 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 Card(
                   elevation: 2,
+                  color: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: Constants.purple,
+                      width: 2,
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -212,7 +224,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           controller: _nameController,
                           enabled: _isEditing,
                           textStyle: const TextStyle(color: Colors.black),
-                          fillColor: Colors.white,
+                          fillColor: Colors.grey.shade300,
                           labelColor: Colors.black87,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -229,7 +241,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           controller: _ageController,
                           enabled: _isEditing,
                           textStyle: const TextStyle(color: Colors.black),
-                          fillColor: Colors.white,
+                          fillColor: Colors.grey.shade300,
                           labelColor: Colors.black87,
                           keyboardType: TextInputType.number,
                           validator: (value) {
@@ -250,7 +262,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           controller: _heightController,
                           enabled: _isEditing,
                           textStyle: const TextStyle(color: Colors.black),
-                          fillColor: Colors.white,
+                          fillColor: Colors.grey.shade300,
                           labelColor: Colors.black87,
                           keyboardType: TextInputType.number,
                           validator: (value) {
@@ -268,27 +280,27 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _handleLogout,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
+                // SizedBox(
+                //   width: double.infinity,
+                //   child: ElevatedButton(
+                //     onPressed: _handleLogout,
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor: Colors.red,
+                //       padding: const EdgeInsets.symmetric(vertical: 16),
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(8),
+                //       ),
+                //     ),
+                //     child: const Text(
+                //       'Logout',
+                //       style: TextStyle(
+                //         fontSize: 16,
+                //         fontWeight: FontWeight.bold,
+                //         color: Colors.white,
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),

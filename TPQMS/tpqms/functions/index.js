@@ -14,7 +14,7 @@ admin.initializeApp({
 });
 
 import { addRideAndBatches } from "./rides/addRide.js";
-import { generateDailyBatches, cleanupAndArchiveBatches } from "./rides/automatedBatchFunction.js";
+import { generateDailyBatches, cleanupAndArchiveBatches , generateDummyBatchData} from "./rides/automatedBatchFunction.js";
 
 console.log("Initialized Firebase apps:", admin.apps); // Logs the list of initialized apps
 
@@ -40,6 +40,33 @@ export const cleanupAndArchiveBatchesCallable = functions.https.onCall(async (da
   } catch (error) {
     console.error("Error cleaning up batches:", error.message);
     throw new functions.https.HttpsError("internal", "Failed to clean up batches.");
+  }
+});
+
+export const generateDummyBatchDataCallable = functions.https.onCall(async (data, context) => {
+  try {
+    console.log("Manually invoked dummy batch generation...");
+    
+    // Extract parameters from the data object
+    const { rideId, adminId } = data.data;
+    
+    if (!rideId || !adminId) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Must provide both rideId and adminId"
+      );
+    }
+
+    const batches = await generateDummyBatchData(rideId, adminId);
+    
+    return { 
+      success: true,
+      message: "Dummy data generated successfully",
+      batches 
+    };
+  } catch (error) {
+    console.error("Error generating dummy data:", error);
+    throw new functions.https.HttpsError("internal", error.message);
   }
 });
 

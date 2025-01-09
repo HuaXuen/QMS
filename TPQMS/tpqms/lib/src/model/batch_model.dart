@@ -6,6 +6,15 @@ class BatchModel {
   final int completedAt;
   final List<String> queueIds;
   final String queueFilledAt;
+  final int? notificationId;
+  // Add a computed property for deterministic notification ID
+  int get deterministicNotificationId {
+    // Combine batch ID components to create a unique, consistent hash
+    final idComponents = id.split('T'); // Splits like "2025-01-02T15-10-00"
+    final dateStr = idComponents[0].replaceAll('-', ''); // "20250102"
+    final timeStr = idComponents[1].replaceAll('-', ''); // "151000"
+    return '${dateStr}${timeStr}'.hashCode;
+  }
 
   BatchModel({
     required this.id,
@@ -15,6 +24,7 @@ class BatchModel {
     required this.completedAt,
     required this.queueIds,
     required this.queueFilledAt,
+    this.notificationId,
   });
 
   @override
@@ -31,6 +41,7 @@ class BatchModel {
       queueIds: List<String>.from(map['queueIds'] ?? ['empty']),
       queueFilledAt: map['queueFilledAt'] ?? 'Not Filled Up',
       completedAt: map['completedAt'] ?? 0,
+      notificationId: map['notificationId'],
     );
   }
   Map<String, dynamic> toMap() {
@@ -41,6 +52,7 @@ class BatchModel {
       'completedAt': completedAt,
       'queueIds': queueIds,
       'queueFilledAt': queueFilledAt,
+      'notificationId': notificationId,
     };
   }
 }

@@ -7,6 +7,8 @@ class QueueModel {
   final int endAt; // Timestamp in milliseconds
   final int waitTime; // Wait time in minutes
   final String status; // e.g., 'waiting', 'completed', 'missed'
+  final int joinQueueTime; // New field: UTC timestamp when user joined queue
+  bool _isTestMode = false;
 
   QueueModel({
     required this.userId,
@@ -17,7 +19,25 @@ class QueueModel {
     required this.endAt,
     required this.waitTime,
     required this.status,
+    required this.joinQueueTime,
   });
+
+  int calculateCurrentWaitTime() {
+    // Get current time in UTC
+    final now = _isTestMode ? DateTime(2025, 1, 1, 14, 0) : DateTime.now();
+    final nowUtc = DateTime.utc(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+      now.second,
+    );
+
+    // Calculate remaining time until endAt
+    final remainingMs = endAt - nowUtc.millisecondsSinceEpoch;
+    return remainingMs > 0 ? (remainingMs ~/ (1000 * 60)) : 0;
+  }
 
   factory QueueModel.fromMap(Map<String, dynamic> map) {
     return QueueModel(
@@ -29,6 +49,7 @@ class QueueModel {
       endAt: map['endAt'] ?? 0,
       waitTime: map['waitTime'] ?? 0,
       status: map['status'] ?? 'waiting',
+      joinQueueTime: map['joinQueueTime'] ?? 0, // New field
     );
   }
 
@@ -42,11 +63,12 @@ class QueueModel {
       'endAt': endAt,
       'waitTime': waitTime,
       'status': status,
+      'joinQueueTime': joinQueueTime, // New field
     };
   }
 
   @override
   String toString() {
-    return 'QueueModel(userId: $userId, rideId: $rideId, rideName: $rideName, batchId: $batchId, startAt: $startAt, endAt: $endAt, waitTime: $waitTime, status: $status)';
+    return 'QueueModel(userId: $userId, rideId: $rideId, rideName: $rideName, batchId: $batchId, startAt: $startAt, endAt: $endAt,joinQueueTime: $joinQueueTime, waitTime: $waitTime, status: $status)';
   }
 }

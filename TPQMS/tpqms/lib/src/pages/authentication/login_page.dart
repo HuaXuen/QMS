@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/common/resuable_widgets/reusable_buttons.dart';
+import 'package:tpqms/src/pages/authentication/adminlogin_page.dart';
 import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
 import 'package:tpqms/src/pages/users/qr_scanner/qrscanner_page.dart';
 import 'package:tpqms/utilities/assets_manager.dart';
@@ -100,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(height: 32),
 
                     CustomElevatedButtonwithIcon(
-                      text: 'Sign up with Phone Number',
+                      text: 'Sign in with Phone Number',
                       icon: Icons.phone_iphone,
                       onPressed: () {
                         Navigator.pushReplacement(
@@ -119,7 +120,12 @@ class _LoginPageState extends State<LoginPage> {
                       text: 'Sign in as Admin',
                       icon: Icons.admin_panel_settings,
                       onPressed: () {
-                        // TODO: Implement admin sign in logic
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminLoginPage(),
+                          ),
+                        );
                       },
                       primaryColor: Constants.purple,
                     ),

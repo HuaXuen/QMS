@@ -62,7 +62,9 @@ class MainPageWrapper extends StatelessWidget {
                 icon: Icons.map_outlined,
                 label: 'Map',
                 onTap: () {
-                  print("havent bro");
+                  if (currentIndex != 3) {
+                    navigation.navigateToMap(context: context);
+                  }
                 },
               ),
               NavBarItem(

@@ -4,6 +4,7 @@ import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/src/model/ride_model.dart';
 import 'package:tpqms/src/model/user_model.dart';
 import 'package:tpqms/src/pages/users/home_page/home_page.dart';
+import 'package:tpqms/src/pages/users/map_page/map_page.dart';
 import 'package:tpqms/src/pages/users/profile/profile_page.dart';
 import 'package:tpqms/src/pages/users/qr_scanner/qrscanner_page.dart';
 import 'package:tpqms/src/pages/users/qr_scanner/ticket_page.dart';
@@ -105,6 +106,17 @@ class Navigation {
       context,
       MaterialPageRoute(
         builder: (context) => const TicketPage(),
+      ),
+    );
+  }
+
+  void navigateToMap({
+    required BuildContext context,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MapPage(),
       ),
     );
   }

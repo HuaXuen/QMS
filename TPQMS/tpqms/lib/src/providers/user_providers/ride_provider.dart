@@ -13,7 +13,7 @@ class RideProvider extends ChangeNotifier {
   bool _isLoading = false;
   StreamSubscription<List<RideModel>>? _ridesSubscription;
   final RealtimeDbService _realtimeDbService;
-  bool _isTestMode = true; // Add this flag
+  bool _isTestMode = false; // Add this flag
   Map<String, RideModel> _rideState = {}; // Use map for better state management
 
   RideProvider(this._rideService, this._realtimeDbService) {
@@ -188,6 +188,9 @@ class RideProvider extends ChangeNotifier {
     required int heightRequirement,
     required int queueTime,
     required int numOfRidersAllowed,
+    required double latitude,
+    required double longitude,
+    required double radiusInMeters,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -203,6 +206,9 @@ class RideProvider extends ChangeNotifier {
         queueTime: queueTime,
         numOfRidersAllowed: numOfRidersAllowed,
         createdAt: DateTime.now(),
+        latitude: latitude,
+        longitude: longitude,
+        radiusInMeters: radiusInMeters,
       );
       print('Ride added successfully: $rideId');
       _isLoading = false;
@@ -272,10 +278,7 @@ class RideProvider extends ChangeNotifier {
       }
 
       await for (final batches in _rideService.streamBatches(rideId)) {
-        final now =
-            _isTestMode ? DateTime(2024, 12, 31, 14, 0) : DateTime.now();
-
-        //now = DateTime.now();
+        final now = _isTestMode ? DateTime(2025, 1, 1, 14, 0) : DateTime.now();
         final nowUtc = DateTime.utc(
           now.year,
           now.month,
@@ -294,48 +297,24 @@ class RideProvider extends ChangeNotifier {
 
         print('Current time (UTC): $nowUtc, End of hour (UTC): $endOfHour');
 
-        // Log all batches fetched from the service
-        print('Processing batches. Current time: $nowUtc');
-        for (var batch in batches) {
-          print(
-              'Batch ${batch.id}: startAt=${batch.startAt}, endAt=${batch.endAt}');
-        }
-
+        // We only filter based on time validity and completion status
         final filteredBatches = batches.where((batch) {
           final startTime =
               DateTime.fromMillisecondsSinceEpoch(batch.startAt, isUtc: true);
           final endTime =
               DateTime.fromMillisecondsSinceEpoch(batch.endAt, isUtc: true);
 
-          // Check if batch is in the future and within the next hour
+          // Check only time validity and completion status
           bool isTimeValid =
               endTime.isAfter(nowUtc) && startTime.isBefore(endOfHour);
+          bool isNotCompleted = batch.completedAt == 0;
 
-          // Check if batch is not completed
-          bool isAvailable = batch.completedAt == 0;
-
-          // Check if batch is not full using ride's numOfRidersAllowed
-          bool isNotFull = batch.queueIds.length < ride.numOfRidersAllowed;
-
-          // UNCOMMENT FOR DEBUG Log the conditions for each batch
-          // print(
-          //     'Batch ID: ${batch.id} -> isTimeValid: $isTimeValid, isAvailable: $isAvailable, isNotFull: $isNotFull');
-
-          return isTimeValid && isAvailable && isNotFull;
+          return isTimeValid && isNotCompleted;
         }).toList();
 
-        //UNCOMMENT FOR DEBUG Log filtered batches
-        // print(
-        //     'Filtered ${filteredBatches.length} batches after applying filters:');
-        // for (var batch in filteredBatches) {
-        //   print(
-        //       'Batch ID: ${batch.id}, Start At: ${batch.startAt}, End At: ${batch.endAt}, Queue IDs: ${batch.queueIds.length}');
-        // }
-
-        // Sort by start time
+        // Sort batches by start time
         filteredBatches.sort((a, b) => a.startAt.compareTo(b.startAt));
 
-        // Yield the filtered batches
         yield filteredBatches;
       }
     } catch (e) {

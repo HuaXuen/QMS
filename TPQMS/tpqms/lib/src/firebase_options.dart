@@ -13,7 +13,7 @@ import 'package:flutter/foundation.dart'
 /// await Firebase.initializeApp(
 ///   options: DefaultFirebaseOptions.currentPlatform,
 /// );
-/// ```
+/// ```This QR code contains your ticket information for entry validation.
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'tpqms-fyp.appspot.com',
     measurementId: 'G-6NJ1TVRKPX',
   );
-
 }

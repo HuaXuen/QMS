@@ -51,12 +51,36 @@ class _PhoneNumberVerificationState extends State<PhoneNumberVerificationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 70),
+              // Back button
+              GestureDetector(
+                onTap: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(
+                        context, Constants.LoginPage);
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Constants.purple.withOpacity(0.1),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Constants.purple,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Your existing content
               Center(
                 child: Image.asset(
                   AssetsManager.authBanner,
                   height: 250,
-                  //color: Constants.purple,
                 ),
               ),
               Padding(padding: const EdgeInsets.all(24.0)),

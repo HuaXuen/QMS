@@ -3,16 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_app_check/firebase_app_check.dart'; //appcheck
 import 'package:provider/provider.dart';
+import 'package:tpqms/services/admin_services/admin_auth_service.dart';
+import 'package:tpqms/services/admin_services/admin_ride_service.dart';
+import 'package:tpqms/services/common_services/location_service.dart';
+import 'package:tpqms/services/common_services/notification_service.dart';
 import 'package:tpqms/services/common_services/queue_service.dart';
 import 'package:tpqms/services/common_services/ride_service.dart';
 import 'package:tpqms/services/common_services/ticket_service.dart';
 import 'package:tpqms/services/common_services/user_service.dart';
 import 'package:tpqms/services/firebase_services/firestore_service.dart';
-import 'package:tpqms/src/pages/authentication/adminverification_page.dart';
+import 'package:tpqms/src/pages/authentication/adminlogin_page.dart';
 import 'package:tpqms/src/pages/authentication/otp_page.dart';
 import 'package:tpqms/src/pages/authentication/phonenumber_verification_page.dart';
 import 'package:tpqms/common/constants.dart';
-import 'package:tpqms/src/pages/authentication/userinformation_page.dart';
+import 'package:tpqms/src/pages/authentication/user_account_creation_page.dart';
 import 'package:tpqms/src/pages/loading_screen.dart';
 import 'package:tpqms/src/pages/users/home_page/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -20,11 +24,14 @@ import 'package:tpqms/src/pages/authentication/login_page.dart';
 import 'package:tpqms/src/pages/users/profile/profile_page.dart';
 import 'package:tpqms/src/pages/users/queue_page/queue_page.dart';
 import 'package:tpqms/src/pages/users/qr_scanner/qrscanner_page.dart';
-import 'package:tpqms/src/pages/admin/ride_management/ridemanagement_page.dart';
+import 'package:tpqms/src/pages/admin/ride_management/add_ride_page.dart';
+import 'package:tpqms/src/providers/admin_providers/admin_auth_provider.dart';
+import 'package:tpqms/src/providers/admin_providers/admin_ride_analytics_provider.dart';
+import 'package:tpqms/src/providers/admin_providers/admin_ride_provider.dart';
 import 'package:tpqms/src/providers/auth_providers/authentication_provider.dart';
-import 'package:tpqms/src/providers/auth_providers/session_provider.dart';
 import 'package:tpqms/src/providers/auth_providers/userinfo_provider.dart';
 import 'package:tpqms/src/providers/common_providers/image_provider.dart';
+import 'package:tpqms/src/providers/user_providers/location_provider.dart';
 import 'package:tpqms/src/providers/user_providers/queue_provider.dart';
 import 'package:tpqms/src/providers/user_providers/ride_provider.dart';
 import 'package:tpqms/services/firebase_services/realtimedb_service.dart';
@@ -50,19 +57,16 @@ void main() async {
   final QueueService _queueService = QueueService(_dbService, _rideService);
   final TicketService _ticketService = TicketService(_firestoreService);
   final UserService _userService = UserService(_firestoreService);
+  final NotificationService _notificationService = NotificationService();
+  final AdminRideService _adminRideService = AdminRideService(
+      _dbService, _firestoreService, _rideService, _notificationService);
+  final AdminAuthService _adminAuthService =
+      AdminAuthService(_firestoreService);
+  final LocationService _locationService =
+      LocationService(_notificationService);
+  final LocationProvider _locationProvider =
+      LocationProvider(_locationService, _rideService);
   runApp(MultiProvider(providers: [
-    // ChangeNotifierProvider(
-    //   create: (_) => SessionManagerProvider(),
-    // ),
-
-    // Dependent providers
-    // ChangeNotifierProxyProvider<SessionManagerProvider, AuthenticationProvider>(
-    //   create: (_) =>
-    //       AuthenticationProvider(), // SESSION SessionManagerProvider()
-    //   update: (_, sessionManager, authProvider) =>
-    //       authProvider ?? AuthenticationProvider(sessionManager),
-    // ),
-
     ChangeNotifierProvider(create: (_) => AuthenticationProvider()),
     ChangeNotifierProvider(create: (_) => UserInfoProvider()),
     ChangeNotifierProvider(
@@ -76,10 +80,24 @@ void main() async {
       lazy: false,
     ),
     ChangeNotifierProvider(
-      create: (context) =>
-          QueueProvider(_queueService, _ticketService, _userService),
-      lazy: false,
-    )
+      create: (context) => QueueProvider(_queueService, _ticketService,
+          _userService, _rideService, _notificationService, _locationProvider),
+      lazy: true,
+    ),
+    ChangeNotifierProvider(
+      create: (_) => AdminRideProvider(
+        _adminRideService,
+      ),
+    ),
+    ChangeNotifierProvider(
+      create: (_) => AdminAuthProvider(_adminAuthService),
+    ),
+    ChangeNotifierProvider(
+      create: (context) => LocationProvider(_locationService, _rideService),
+    ),
+    ChangeNotifierProvider(
+      create: (context) => RideAnalyticsProvider(_firestoreService),
+    ),
   ], child: MyApp()));
 }
 
