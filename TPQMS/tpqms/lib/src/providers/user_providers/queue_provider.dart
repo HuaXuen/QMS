@@ -27,18 +27,68 @@ class QueueProvider extends ChangeNotifier {
   String? _error;
   Stream<List<QueueModel>>? _queueStream;
   StreamSubscription? _queueSubscription; // Add this
-
+  bool _initializing = true; // Add this flag
   // Getters
   bool get isLoading => _isLoading;
   List<QueueModel> get currentQueues => _currentQueues;
   String? get error => _error;
   Stream<List<QueueModel>>? get queueStream => _queueStream;
   int get queueCount => _currentQueues.length;
+  bool get initializing => _initializing;
 
   QueueProvider(this._queueService, this._ticketService, this._userService,
       this._rideService, this._notificationService, this._locationProvider) {
     print('[QUEUE-PROVIDER] Initializing QueueProvider');
-    initializeQueueStream();
+  }
+
+  Future<String?> getCurrentUserId() async {
+    try {
+      return await _userService.getCurrentUserUid();
+    } catch (e) {
+      print('[QUEUE-PROVIDER] Error getting current user ID: $e');
+      return null;
+    }
+  }
+
+  /// Explicitly initialize the provider for a specific user
+  Future<void> initializeForUser(String userId) async {
+    print(
+        '[QUEUE-PROVIDER] Explicitly initializing provider for user: $userId');
+    _initializing = true;
+    notifyListeners();
+    try {
+      // Clean up any existing subscriptions first
+      await _queueSubscription?.cancel();
+      _queueSubscription = null;
+      _currentQueues = [];
+
+      // Set up new stream
+      print('[QUEUE-PROVIDER] Setting up queue stream for user: $userId');
+      _queueStream = _queueService.getUserQueues(userId);
+
+      print('[QUEUE-PROVIDER] Attaching stream listener');
+      _queueSubscription = _queueStream?.listen((queues) {
+        print(
+            '[QUEUE-PROVIDER] Queue update received - Count: ${queues.length}');
+        _currentQueues = queues;
+        _initializing = false;
+
+        notifyListeners();
+      }, onError: (error) {
+        print('[QUEUE-PROVIDER] ERROR in queue stream: $error');
+        _error = 'Failed to receive queue updates';
+        _initializing = false;
+
+        notifyListeners();
+      });
+    } catch (e) {
+      print('[QUEUE-PROVIDER] ERROR initializing for user: $e');
+      _error = 'Failed to initialize queue stream';
+      _initializing = false;
+
+      notifyListeners();
+      rethrow;
+    }
   }
 
   /// Initializes the stream of queues for the current user
@@ -165,7 +215,7 @@ class QueueProvider extends ChangeNotifier {
         print('\n✨ Queue Successful! Updating ticket count...');
         final ride = await _rideService.getRideById(rideId);
         final batch = await _rideService.getBatchById(rideId, batchId);
-        if (ride != null && batch != null) {
+        if (ride != null) {
           await _notificationService.scheduleRideNotification(
             ride,
             batch,
@@ -200,7 +250,7 @@ class QueueProvider extends ChangeNotifier {
   Future<Map<String, dynamic>> dequeueFromRide({
     required String rideId,
     required String batchId,
-    required BuildContext context, // Add this parameter
+    required BuildContext context,
   }) async {
     print('[QUEUE-PROVIDER] Starting dequeueFromRide operation');
     print('[QUEUE-PROVIDER] Parameters:');
@@ -240,13 +290,15 @@ class QueueProvider extends ChangeNotifier {
       print('[QUEUE-PROVIDER] Dequeue attempt result: $result');
 
       if (result['success']) {
+        await _locationProvider.stopMonitoringRide(rideId);
+        print(
+            '[QUEUE-PROVIDER] Stopped monitoring, updating ticket rides count');
         print(
             '[QUEUE-PROVIDER] Dequeue successful, updating ticket rides count');
         await _notificationService.cancelRideNotification(batch);
         print('[QUEUE-PROVIDER] Notification cancelled successfully');
         await _ticketService.updateRidesQueued(ticket.ticketId, -1);
         print('[QUEUE-PROVIDER] Ticket updated successfully');
-        await _locationProvider.stopMonitoringRide(rideId);
         await _notificationService.sendImmediateDequeueNotification(
             ride!, batch);
       }
@@ -361,6 +413,8 @@ class QueueProvider extends ChangeNotifier {
   @override
   void dispose() {
     _queueSubscription?.cancel();
+    _queueSubscription = null;
+    _currentQueues.clear();
     super.dispose();
   }
 
@@ -372,21 +426,27 @@ class QueueProvider extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  // Example for RideProvider
+  // Modify the reset method to be more thorough
   Future<void> reset() async {
     try {
-      print('[QUEUE-PROVIDER] Starting reset...');
+      print('[QUEUE-PROVIDER] Starting complete reset...');
 
+      // Cancel existing subscription
       await _queueSubscription?.cancel();
+      _queueSubscription = null;
+
+      // Clear all state
       _queueStream = null;
       _currentQueues = [];
       _error = null;
-      // Notify listeners AFTER cleanup
-      notifyListeners();
+      _isLoading = false;
 
-      print('[QUEUE-PROVIDER] Reset completed');
+      notifyListeners();
+      print('[QUEUE-PROVIDER] Reset completed successfully');
     } catch (e) {
       print('[QUEUE-PROVIDER] Error during reset: $e');
+      _error = 'Failed to reset provider';
+      notifyListeners();
     }
   }
 }

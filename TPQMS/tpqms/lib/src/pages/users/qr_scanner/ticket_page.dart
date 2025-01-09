@@ -261,7 +261,8 @@ class TicketDetailsCard extends StatelessWidget {
         ),
       ),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, 30), // Add extra padding for navigation bar
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -310,7 +311,6 @@ class TicketDetailsCard extends StatelessWidget {
               '2',
               Icons.confirmation_num_outlined,
             ),
-            const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () => _showQRCode(context),
               icon: const Icon(Icons.qr_code),

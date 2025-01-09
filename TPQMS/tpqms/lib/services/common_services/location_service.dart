@@ -12,7 +12,7 @@ class LocationService {
   final NotificationService _notificationService;
 
   // Stream controllers
-  final _locationController = StreamController<Position>.broadcast();
+  var _locationController = StreamController<Position>.broadcast();
   StreamSubscription<Position>? _locationSubscription;
 
   // Service state
@@ -80,25 +80,30 @@ class LocationService {
     }
 
     try {
-      // Configure location settings for optimal battery usage
+      // Ensure we have a fresh controller
+      if (_locationController.isClosed) {
+        _locationController = StreamController<Position>.broadcast();
+      }
+
       const locationSettings = LocationSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10, // Update every 10 meters
+        distanceFilter: 10,
       );
 
-      // Start listening to location updates
+      _locationSubscription?.cancel(); // Cancel any existing subscription
       _locationSubscription = Geolocator.getPositionStream(
         locationSettings: locationSettings,
-      ).listen(
-        (Position position) {
-          _lastKnownPosition = position;
+      ).listen((Position position) {
+        _lastKnownPosition = position;
+        if (!_locationController.isClosed) {
           _locationController.add(position);
-        },
-        onError: (error) {
-          debugPrint('Location stream error: $error');
+        }
+      }, onError: (error) {
+        debugPrint('Location stream error: $error');
+        if (!_locationController.isClosed) {
           _locationController.addError(error);
-        },
-      );
+        }
+      });
 
       return true;
     } catch (e) {
@@ -166,18 +171,51 @@ class LocationService {
     if (distance > radius) {
       print('[LOCATION-SERVICE] User has moved beyond allowed radius');
 
+      // Get the current time
+      final now = DateTime.now();
+
+      // Check if we should send a notification
+      bool shouldNotify = false;
+
       if (!_lastNotificationTimes.containsKey(ride.id)) {
-        print('[LOCATION-SERVICE] Sending first-time warning notification');
+        // First time we're detecting the user is out of range
+        shouldNotify = true;
+        print(
+            '[LOCATION-SERVICE] First time detection - will send notification');
+      } else {
+        // Calculate time since last notification
+        final lastNotification = _lastNotificationTimes[ride.id]!;
+        final timeSinceLastNotification = now.difference(lastNotification);
+
+        // Check if 5 minutes have passed
+        if (timeSinceLastNotification.inMinutes >= 5) {
+          shouldNotify = true;
+          print(
+              '[LOCATION-SERVICE] 5 minutes passed since last notification (${timeSinceLastNotification.inMinutes} minutes) - will send notification');
+        } else {
+          print(
+              '[LOCATION-SERVICE] Too soon for next notification. Minutes since last: ${timeSinceLastNotification.inMinutes}');
+        }
+      }
+
+      // Send notification if conditions are met
+      if (shouldNotify) {
+        print('[LOCATION-SERVICE] Sending proximity warning notification');
         await _notificationService.sendDistanceWarningNotification(
             ride, distanceToPrint);
-        _lastNotificationTimes[ride.id] = DateTime.now();
-        print('[LOCATION-SERVICE] Warning notification sent and recorded');
-      } else {
-        final lastNotification = _lastNotificationTimes[ride.id]!;
-        print('[LOCATION-SERVICE] Previous warning sent at: $lastNotification');
+        _lastNotificationTimes[ride.id] = now;
+        print(
+            '[LOCATION-SERVICE] Warning notification sent and timestamp updated');
       }
     } else {
       print('[LOCATION-SERVICE] User is within allowed radius');
+      // Optionally, clear the last notification time when user returns to allowed range
+      // This will ensure they get a new notification immediately if they leave again
+      if (_lastNotificationTimes.containsKey(ride.id)) {
+        _lastNotificationTimes.remove(ride.id);
+        print(
+            '[LOCATION-SERVICE] Cleared notification history as user returned to allowed range');
+      }
     }
 
     print('[LOCATION-SERVICE] Completed distance check for ride: ${ride.name}');
@@ -185,10 +223,14 @@ class LocationService {
 
   // Stop tracking and clean up resources
   Future<void> dispose() async {
-    await _locationSubscription?.cancel();
-    await _locationController.close();
-    _isInitialized = false;
-    _lastKnownPosition = null;
-    _lastNotificationTimes.clear();
+    try {
+      await _locationSubscription?.cancel();
+      await _locationController.close();
+      _isInitialized = false;
+      _lastKnownPosition = null;
+      _lastNotificationTimes.clear();
+    } catch (e) {
+      print('[LOCATION-SERVICE] Error during dispose: $e');
+    }
   }
 }

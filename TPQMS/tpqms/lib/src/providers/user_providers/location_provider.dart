@@ -64,6 +64,14 @@ class LocationProvider extends ChangeNotifier {
         '[LOCATION-PROVIDER] Starting to monitor ride: ${ride.name} (${ride.id})');
     print(
         '[LOCATION-PROVIDER] Current monitored rides before adding: ${_monitoredRideIds.toString()}'); // Add this
+    if (!_isTracking) {
+      print('[LOCATION-PROVIDER] Location tracking not active, starting...');
+      final success = await startTracking();
+      if (!success) {
+        print('[LOCATION-PROVIDER] Failed to start location tracking');
+        return;
+      }
+    }
 
     if (!_monitoredRideIds.contains(ride.id)) {
       print('[LOCATION-PROVIDER] Adding ride to monitored set');
@@ -79,8 +87,17 @@ class LocationProvider extends ChangeNotifier {
               '[LOCATION-PROVIDER] Timer triggered - checking all monitored rides');
           print(
               '[LOCATION-PROVIDER] Currently monitored rides: ${_monitoredRideIds.toString()}'); // Add this
-          _checkAllMonitoredRides();
+          if (_currentPosition != null) {
+            // Add explicit position check
+
+            _checkAllMonitoredRides();
+          }
         });
+        if (_currentPosition != null) {
+          _checkAllMonitoredRides();
+        }
+
+        notifyListeners();
       } else {
         print('[LOCATION-PROVIDER] Monitoring timer already running');
       }
@@ -89,6 +106,7 @@ class LocationProvider extends ChangeNotifier {
           '[LOCATION-PROVIDER] Currently monitoring ${_monitoredRideIds.length} rides');
       print(
           '[LOCATION-PROVIDER] Monitored rides IDs: ${_monitoredRideIds.toString()}'); // Add this
+
       notifyListeners();
     } else {
       print('[LOCATION-PROVIDER] Ride ${ride.id} is already being monitored');
@@ -136,7 +154,6 @@ class LocationProvider extends ChangeNotifier {
       print('[LOCATION-PROVIDER] Successfully removed ride from monitoring');
       print(
           '[LOCATION-PROVIDER] Updated monitored rides: ${_monitoredRideIds.toString()}'); // Add this
-
       if (_monitoredRideIds.isEmpty) {
         print('[LOCATION-PROVIDER] No more rides to monitor, canceling timer');
         _monitoringTimer?.cancel();
@@ -171,10 +188,18 @@ class LocationProvider extends ChangeNotifier {
         // Subscribe to location updates
         _locationSubscription = _locationService.locationStream.listen(
           (position) {
+            print(
+                '[LOCATION-PROVIDER] Received position update: $position'); // Add debug log
+
             _currentPosition = position;
+            if (_monitoredRideIds.isNotEmpty) {
+              _checkAllMonitoredRides();
+            }
             notifyListeners();
           },
           onError: (error) {
+            print('[LOCATION-PROVIDER] Location stream error: $error');
+
             _error = 'Location tracking error: $error';
             notifyListeners();
           },

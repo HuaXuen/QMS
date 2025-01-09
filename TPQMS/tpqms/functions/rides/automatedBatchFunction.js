@@ -8,27 +8,23 @@ export const generateDailyBatches = async () => {
   const ridesRef = db.ref("rides");
 
   const ridesSnapshot = await ridesRef.once("value");
-  let now = new Date(); // Current local time
-  let today = new Date(); // Target day for batch generation
+  let now = new Date(); //Current local time
+  let today = new Date(); //Target day for batch generation
 
-  // Revised date logic
-  if (now.getHours() >= 18) {
-    // After 6 PM, generate for next day
-    today.setDate(today.getDate());
-    // Before 10 AM, generate for current day
-    // No date adjustment needed since we want today's batches
+  if (now.getHours() >= 10) {
+    //After 6 PM, generate for next day
+    today.setDate(today.getDate() + 1);
   } else {
-    // Between 10 AM and 6 PM, generate for next day
+    //Between 10 AM and 6 PM, generate for next day
     today.setDate(today.getDate());
   }
 
-  today.setHours(16, 0, 0, 0); // Start time: 10:00 AM (local time)
-
-  const endHour = 23; // End time: 6 PM (local time) 18 i changed to 23
+  today.setHours(10, 0, 0, 0); //Start time: 10:00 AM (local time)
+  const endHour = 18; //End time: 6 PM (local time) 18
   const promises = [];
   ridesSnapshot.forEach((rideSnapshot) => {
     const ride = rideSnapshot.val();
-    const duration = ride.numOfRidersAllowed <= 5 ? 5 : 10; // Batch duration in minutes
+    const duration = ride.numOfRidersAllowed <= 5 ? 5 : 10; //Batch duration in minutes
     const batches = {};
 
     for (let hour = 10; hour < endHour; hour++) {
@@ -38,10 +34,10 @@ export const generateDailyBatches = async () => {
         );
         const endAt = new Date(startAt.getTime() + duration * 60000);
 
-        // Ensure batch does not exceed 6 PM 18 i changed to 23
-        if (startAt.getHours() >= 23) break;
+        //Ensure batch does not exceed 6 PM
+        if (startAt.getHours() >= 18) break;
 
-        // Generate the batch key in local time
+        //Generate the batch key in local time
         const batchKey = `${startAt.getFullYear()}-${(startAt.getMonth() + 1)
           .toString()
           .padStart(2, "0")}-${startAt
@@ -55,14 +51,15 @@ export const generateDailyBatches = async () => {
           .toString()
           .padStart(2, "0")}-00`;
 
-        // Save timestamps as local time in milliseconds
+        //Save key as timestamps
         batches[batchKey] = {
-          startAt: startAt.getTime(), // Local time in milliseconds
-          endAt: endAt.getTime(), // Local time in milliseconds
+          startAt: startAt.getTime(),
+          endAt: endAt.getTime(),
           queueIds: ["empty"],
           batchStatus: "pending",
           completedAt: 0,
           queueFilledAt: "Not Filled Up",
+          completedBy: null,
         };
       }
     }
@@ -123,9 +120,9 @@ export const cleanupAndArchiveBatches = async () => {
       .once("value");
     const batches = batchesSnapshot.val();
 
-    // Initialize analytics metrics
+    // Initialize analytics metrics with operator tracking
     let analyticsData = {
-      timeOfReportGeneration: reportGenerationTime, // e.g. "Dec 23, 2024, 10:30 PM"
+      timeOfReportGeneration: reportGenerationTime,
       totalVisitors: 0,
       averageQueueTime: "N/A",
       nonCompletedBatchCount: 0,
@@ -135,19 +132,19 @@ export const cleanupAndArchiveBatches = async () => {
       busiestBatchStartTime: "N/A",
       rideStatus: rideData.status || "unknown",
       fastestCompletionTime: null,
-      // New fields for operators and batch statuses
-      operators: new Set(), // We'll convert this to array later
+      // Enhanced operator tracking
+      operators: new Set(),
+      operatorStats: {}, // Will track stats per operator
       batchStatusSummary: {
         pending: 0,
         completed: 0,
         failed: 0,
         other: 0,
-        statusList: [], // Will store all batch statuses with their timestamps
+        statusList: [],
       },
     };
 
     if (!batches) {
-      // Convert Set to Array before saving
       analyticsData.operators = Array.from(analyticsData.operators);
       promises.push(
         firestore
@@ -164,11 +161,52 @@ export const cleanupAndArchiveBatches = async () => {
     let fastestBatchStartTime = null;
 
     Object.entries(batches).forEach(([batchKey, batch]) => {
-      // Track batch statuses with original batch keys
+      // Track operator activity
+      if (batch.completedBy) {
+        analyticsData.operators.add(batch.completedBy);
+
+        // Initialize operator stats if not exists
+        if (!analyticsData.operatorStats[batch.completedBy]) {
+          analyticsData.operatorStats[batch.completedBy] = {
+            batchesCompleted: 0,
+            totalVisitorsProcessed: 0,
+            averageCompletionTime: 0,
+            totalCompletionTime: 0,
+          };
+        }
+        if (batch.averageWaitTime && batch.queueIds) {
+          const visitorCount = batch.queueIds.filter(
+            (id) => id !== "empty"
+          ).length;
+          totalQueueTime += batch.averageWaitTime * visitorCount;
+          totalProcessedVisitors += visitorCount;
+        }
+
+        // Update operator stats
+        const operatorStats = analyticsData.operatorStats[batch.completedBy];
+        operatorStats.batchesCompleted++;
+        const visitorCount = batch.queueIds.filter(
+          (id) => id !== "empty"
+        ).length;
+        operatorStats.totalVisitorsProcessed += visitorCount;
+
+        if (batch.completedAt && batch.startAt) {
+          const completionTime = batch.completedAt - batch.startAt;
+          operatorStats.totalCompletionTime += completionTime;
+          operatorStats.averageCompletionTime =
+            operatorStats.totalCompletionTime / operatorStats.batchesCompleted;
+        }
+      }
+
+      // Track batch statuses with enhanced details
       const batchStatusEntry = {
-        batchKey: batchKey, // Original batch key e.g. "2025-01-01T13-00-00"
+        batchKey: batchKey,
         status: batch.batchStatus || "unknown",
-        completedBy: batch.completedBy || null, // Include operator ID if available
+        completedBy: batch.completedBy || null,
+        completionTime: batch.completedAt
+          ? batch.completedAt - batch.startAt
+          : null,
+        visitorCount: batch.queueIds.filter((id) => id !== "empty").length,
       };
       analyticsData.batchStatusSummary.statusList.push(batchStatusEntry);
 
@@ -187,7 +225,7 @@ export const cleanupAndArchiveBatches = async () => {
           analyticsData.batchStatusSummary.other++;
       }
 
-      // Existing analytics calculations
+      // Continue with existing analytics calculations...
       const visitorCount = Array.isArray(batch.queueIds)
         ? batch.queueIds.filter((id) => id !== "empty").length
         : 0;
@@ -229,9 +267,8 @@ export const cleanupAndArchiveBatches = async () => {
       }
     });
 
-    // Convert Set to Array before saving
+    // Convert Set to Array and finalize analytics
     analyticsData.operators = Array.from(analyticsData.operators);
-
     analyticsData.busiestBatchStartTime = fastestBatchStartTime || "N/A";
     analyticsData.averageQueueTime =
       totalProcessedVisitors > 0
@@ -240,13 +277,13 @@ export const cleanupAndArchiveBatches = async () => {
           )} minutes`
         : "N/A";
 
+    // Save analytics and cleanup
     promises.push(
       Promise.all([
         firestore
           .collection("rideAnalytics")
           .doc(`${rideName}_${todayKey}`)
           .set({ [todayKey]: analyticsData }, { merge: true }),
-
         db.ref(`rides/${rideId}/batches`).remove(),
       ])
     );
@@ -264,7 +301,15 @@ export async function generateDummyBatchData(rideId, adminId) {
   const db = getDatabase();
 
   try {
-    // Set up time range for January 4th, 2025 (10 AM to 11 PM)
+    // Define multiple operators including the provided adminId
+    const operators = [
+      adminId,
+      "operator_" + nanoid(6),
+      "operator_" + nanoid(6),
+      "operator_" + nanoid(6),
+    ];
+
+    // Set up time range (10 AM to 11 PM)
     const baseDate = new Date("2025-01-03T10:00:00");
     const endTime = new Date("2025-01-03T23:00:00");
     const batchInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -274,26 +319,14 @@ export async function generateDummyBatchData(rideId, adminId) {
 
     // Helper function to determine visitors based on time of day
     function getVisitorCountForTime(hour) {
-      // Peak hours (12 PM - 4 PM)
-      if (hour >= 12 && hour < 16) {
-        return Math.floor(Math.random() * 4) + 7; // 7-10 visitors
-      }
-      // High traffic (4 PM - 8 PM)
-      else if (hour >= 16 && hour < 20) {
-        return Math.floor(Math.random() * 4) + 6; // 6-9 visitors
-      }
-      // Morning/Late Night (10 AM - 12 PM, 8 PM - 11 PM)
-      else {
-        return Math.floor(Math.random() * 4) + 3; // 3-6 visitors
-      }
+      if (hour >= 12 && hour < 16)
+        return Math.floor(Math.random() * 4) + 7; // Peak: 7-10 visitors
+      else if (hour >= 16 && hour < 20)
+        return Math.floor(Math.random() * 4) + 6; // High: 6-9 visitors
+      else return Math.floor(Math.random() * 4) + 3; // Normal: 3-6 visitors
     }
 
-    // Helper function to determine if batch should be completed (90% chance)
-    function shouldComplete() {
-      return Math.random() < 0.9;
-    }
-
-    // Generate batches
+    // Generate batches with realistic operator assignments
     while (currentTime < endTime) {
       const batchKey = currentTime
         .toISOString()
@@ -303,29 +336,32 @@ export async function generateDummyBatchData(rideId, adminId) {
 
       const hour = currentTime.getHours();
       const visitorCount = getVisitorCountForTime(hour);
-
-      // Generate unique IDs for visitors
       const queueIds = Array.from({ length: visitorCount }, () => nanoid());
       if (queueIds.length === 0) queueIds.push("empty");
 
       const startAt = currentTime.getTime();
       const endAt = startAt + batchInterval;
 
-      // Determine if batch should be completed
-      const isCompleted = shouldComplete();
-      const completedAt = isCompleted ? endAt + Math.random() * 60000 : 0; // Random completion time within 1 minute after endAt
+      // Determine batch completion with 90% chance
+      const isCompleted = Math.random() < 0.9;
+      const completedAt = isCompleted ? endAt + Math.random() * 60000 : 0;
+
+      // Assign a random operator for completed batches
+      const assignedOperator = isCompleted
+        ? operators[Math.floor(Math.random() * operators.length)]
+        : null;
 
       batches[batchKey] = {
         startAt,
         endAt,
         queueIds,
         batchStatus: isCompleted ? "completed" : "pending",
-        completedAt: completedAt,
+        completedAt,
         queueFilledAt:
           queueIds.length >= 10
-            ? new Date(startAt - Math.random() * 300000).toISOString() // Random time within 5 minutes before start
+            ? new Date(startAt - Math.random() * 300000).toISOString()
             : "Not Filled Up",
-        completedBy: isCompleted ? adminId : null,
+        completedBy: assignedOperator,
       };
 
       currentTime.setTime(currentTime.getTime() + batchInterval);
@@ -334,7 +370,9 @@ export async function generateDummyBatchData(rideId, adminId) {
     // Save batches to database
     await db.ref(`rides/${rideId}/batches`).set(batches);
     console.log(
-      `Generated ${Object.keys(batches).length} batches for ride ${rideId}`
+      `Generated ${
+        Object.keys(batches).length
+      } batches for ride ${rideId} with ${operators.length} operators`
     );
     return batches;
   } catch (error) {

@@ -20,6 +20,7 @@ class CustomPopupMenu extends StatelessWidget {
   final Color selectedValueTextColor;
   final Color dropdownArrowColor;
   final Color menuBackgroundColor;
+  final Widget Function(BuildContext context, String item)? itemBuilder;
 
   const CustomPopupMenu({
     Key? key,
@@ -41,6 +42,7 @@ class CustomPopupMenu extends StatelessWidget {
     this.selectedValueTextColor = Colors.white,
     this.dropdownArrowColor = Colors.white,
     this.menuBackgroundColor = const Color(0xFF1E293B),
+    this.itemBuilder,
   }) : super(key: key);
 
   @override
@@ -71,10 +73,12 @@ class CustomPopupMenu extends StatelessWidget {
                   value: item,
                   child: Container(
                     width: double.infinity,
-                    child: Text(
-                      item,
-                      style: TextStyle(color: itemTextColor),
-                    ),
+                    child: itemBuilder != null
+                        ? itemBuilder!(context, item)
+                        : Text(
+                            item,
+                            style: TextStyle(color: itemTextColor),
+                          ),
                   ),
                 );
               }).toList();

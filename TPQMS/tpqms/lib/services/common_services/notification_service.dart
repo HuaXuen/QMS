@@ -185,6 +185,34 @@ class NotificationService {
     }
   }
 
+  Future<bool> sendMissedQueueNotification(
+      RideModel ride, BatchModel batch) async {
+    try {
+      final notificationId = batch.deterministicNotificationId;
+      await _notificationsPlugin.show(
+        notificationId,
+        'Missed Queue Notice',
+        'You have been marked as missed for ${ride.name}. This will affect your queue history.',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _notificationChannelId,
+            _notificationChannelName,
+            channelDescription: _notificationChannelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+            enableLights: true,
+            enableVibration: true,
+            icon: '@mipmap/ic_launcher',
+          ),
+        ),
+      );
+      return true;
+    } catch (e) {
+      print('Failed to send missed queue notification: $e');
+      return false;
+    }
+  }
+
   Future<bool> sendImmediateDequeueNotification(
       RideModel ride, BatchModel batch) async {
     try {
@@ -247,7 +275,7 @@ class NotificationService {
 
       await _notificationsPlugin.show(
         notificationId,
-        'Proximity Warning', // Title
+        'Proximity Warning',
         'You are currently ${distance} from ${ride.name}. Please return on time for your ride',
         NotificationDetails(
           android: AndroidNotificationDetails(
@@ -284,6 +312,36 @@ class NotificationService {
         notificationId,
         'Ride Under Maintenance',
         '${ride.name} is now under maintenance. Your queue position has been cancelled.',
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _notificationChannelId,
+            _notificationChannelName,
+            channelDescription: _notificationChannelDescription,
+            importance: Importance.high,
+            priority: Priority.high,
+            enableLights: true,
+            enableVibration: true,
+            icon: '@mipmap/ic_launcher',
+          ),
+        ),
+      );
+      return true;
+    } catch (e) {
+      print('Failed to send maintenance notification: $e');
+      return false;
+    }
+  }
+
+  Future<bool> sendClosedNotification(
+    RideModel ride, {
+    List<String>? affectedVisitors,
+  }) async {
+    try {
+      final notificationId = ride.hashCode;
+      await _notificationsPlugin.show(
+        notificationId,
+        'Ride Closed',
+        '${ride.name} is now closed. Your queue position has been cancelled.',
         NotificationDetails(
           android: AndroidNotificationDetails(
             _notificationChannelId,

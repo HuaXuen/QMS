@@ -437,6 +437,8 @@ class AdminRideCard extends StatelessWidget {
     if (currentBatch == null) {
       return const SizedBox.shrink();
     }
+    final isButtonDisabled = ride.status.toLowerCase() == 'under maintenance' ||
+        ride.status.toLowerCase() == 'closed';
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -459,17 +461,26 @@ class AdminRideCard extends StatelessWidget {
           const SizedBox(width: 16),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () =>
-                  _completeBatch(context, adminProvider, currentBatch),
-              icon: const Icon(Icons.check_circle),
-              label: const Text('Complete Batch'),
+              onPressed: isButtonDisabled
+                  ? null // Disable the button
+                  : () => _completeBatch(context, adminProvider, currentBatch),
+              icon: Icon(Icons.check_circle,
+                  color: isButtonDisabled ? Colors.grey[800] : Colors.white),
+              label: Text(
+                'Complete Batch',
+                style: TextStyle(
+                  color: isButtonDisabled ? Colors.grey[800] : Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.withOpacity(0.9),
+                backgroundColor: isButtonDisabled
+                    ? Colors.grey[800] // Lighter grey for better visibility
+                    : Colors.green.withOpacity(0.9),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ),

@@ -20,6 +20,7 @@ class QueuePage extends StatefulWidget {
 
 class _QueuePageState extends State<QueuePage> with WidgetsBindingObserver {
   Timer? _refreshTimer; // Add timer for periodic updates
+  bool _isInitialized = false; // Add this flag to track initialization
 
   @override
   void initState() {
@@ -31,13 +32,39 @@ class _QueuePageState extends State<QueuePage> with WidgetsBindingObserver {
     });
   }
 
-  void _initializeQueueUpdates() {
-    final queueProvider = context.read<QueueProvider>();
+  Future<void> _initializeQueueUpdates() async {
+    // Avoid multiple initializations
+    if (_isInitialized) return;
+
+    try {
+      final queueProvider = context.read<QueueProvider>();
+
+      // Get the current user ID for initialization
+      final userId = await queueProvider.getCurrentUserId();
+      if (userId != null) {
+        // First ensure the stream is properly initialized
+        await queueProvider.initializeForUser(userId);
+
+        // Then set up periodic updates
+        _setupPeriodicUpdates(queueProvider);
+
+        _isInitialized = true;
+      } else {
+        print('[QUEUE-PAGE] No user ID available for initialization');
+      }
+    } catch (e) {
+      print('[QUEUE-PAGE] Error during initialization: $e');
+    }
+  }
+
+  void _setupPeriodicUpdates(QueueProvider queueProvider) {
+    // Cancel existing timer if any
+    _refreshTimer?.cancel();
 
     // Initial refresh
-    queueProvider.onQueuePageOpened();
+    queueProvider.refreshQueueWaitTimes();
 
-    // Set up periodic refresh every 30 seconds
+    // Set up periodic refresh every 10 seconds
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) {
         queueProvider.refreshQueueWaitTimes();
@@ -74,7 +101,7 @@ class _QueuePageState extends State<QueuePage> with WidgetsBindingObserver {
         body: Consumer<QueueProvider>(
           builder: (context, queueProvider, _) {
             // Show loading state if needed
-            if (queueProvider.isLoading) {
+            if (queueProvider.initializing || queueProvider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 

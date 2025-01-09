@@ -36,6 +36,8 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
   // Add this method to get walking directions
   Future<void> _getDirections(
       LatLng origin, LatLng destination, String rideId) async {
+    print('[MAP] Getting directions for ride $rideId');
+
     try {
       final String url = 'https://maps.googleapis.com/maps/api/directions/json?'
           'origin=${origin.latitude},${origin.longitude}'
@@ -69,6 +71,8 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
 
         // Update only this specific route without clearing others
         setState(() {
+          print('[MAP] Updated polyline for ride $rideId');
+
           _polylines[rideId] = polyline;
         });
       }
@@ -109,18 +113,32 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
   }
 
   Future<void> _initializeLocationTracking() async {
+    print('[MAP-DEBUG] Starting location tracking initialization');
     final locationProvider = context.read<LocationProvider>();
+
+    print(
+        '[MAP-DEBUG] Location provider initialized state: ${locationProvider.isInitialized}');
+    print(
+        '[MAP-DEBUG] Location provider tracking state: ${locationProvider.isTracking}');
+
     if (!locationProvider.isInitialized) {
+      print('[MAP-DEBUG] Initializing location provider');
       await locationProvider.initialize();
+      print('[MAP-DEBUG] Location provider initialization complete');
     }
+
     if (!locationProvider.isTracking) {
+      print('[MAP-DEBUG] Starting location tracking');
       await locationProvider.startTracking();
+      print('[MAP-DEBUG] Location tracking started');
     }
+
+    print('[MAP-DEBUG] Updating markers');
     _updateMarkers(context);
   }
 
   void _updateMarkers(BuildContext context) {
-    print('[MAP] Updating markers...');
+    print('[MAP-DEBUG] --- Starting marker and route update ---');
     final rideProvider = context.read<RideProvider>();
     final queueProvider = context.read<QueueProvider>();
     final locationProvider = context.read<LocationProvider>();
@@ -131,6 +149,14 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
     print(
         '[MAP] Processing ${rides.length} rides and ${queuedRides.length} queued rides');
 
+    print('[MAP-DEBUG] Available rides: ${rides.length}');
+    print('[MAP-DEBUG] Queued rides: ${queuedRides.length}');
+    print(
+        '[MAP-DEBUG] Current position available: ${locationProvider.currentPosition != null}');
+    for (final queue in queuedRides) {
+      print(
+          '[MAP-DEBUG] Queued ride ID: ${queue.rideId}, Name: ${queue.rideName}');
+    }
     // Create a temporary set of markers
     Set<Marker> newMarkers = {};
 
@@ -190,23 +216,23 @@ class _MapPageState extends State<MapPage> with WidgetsBindingObserver {
       }
     });
 
-    // Update routes without clearing existing ones
+    // Update routes with enhanced logging
     if (locationProvider.currentPosition != null) {
+      print('[MAP] Updating routes for ${queuedRides.length} queued rides');
       for (final ride in rides) {
         if (ride.latitude != null &&
             ride.longitude != null &&
             queuedRides.any((queue) => queue.rideId == ride.id)) {
+          print('[MAP] Drawing route for ride: ${ride.name}');
           final origin = LatLng(
             locationProvider.currentPosition!.latitude,
             locationProvider.currentPosition!.longitude,
           );
           final destination = LatLng(ride.latitude!, ride.longitude!);
-
-          // Get walking directions - polylines will be updated individually
           _getDirections(origin, destination, ride.id);
         } else {
-          // Remove polyline for unqueued rides
           if (_polylines.containsKey(ride.id)) {
+            print('[MAP] Removing route for unqueued ride: ${ride.id}');
             setState(() {
               _polylines.remove(ride.id);
             });

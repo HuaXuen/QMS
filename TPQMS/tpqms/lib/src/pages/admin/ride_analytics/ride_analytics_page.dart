@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tpqms/common/constants.dart';
 import 'package:tpqms/src/model/admin_model/ride_analytics_model.dart';
+import 'package:tpqms/src/pages/admin/ride_analytics/ride_analytics_detail_view.dart';
 import 'package:tpqms/src/pages/admin/shared/admin_page_wrapper.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:tpqms/src/providers/admin_providers/admin_ride_analytics_provider.dart';
@@ -209,53 +210,59 @@ class AnalyticsReportCard extends StatelessWidget {
           width: 1,
         ),
       ),
-      child: ExpansionTile(
-        title: Text(
-          report.rideName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        subtitle: Text(
-          report.reportDate,
-          style: TextStyle(
-            color: Colors.grey[600],
-          ),
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDetailRow('Status', report.rideStatus),
-                _buildDetailRow('Total Visitors', '${report.totalVisitors}'),
-                _buildDetailRow('Average Queue Time', report.averageQueueTime),
-                const SizedBox(height: 16),
-                const Text(
-                  'Batch Status Summary',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              report.rideName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              report.reportDate,
+              style: TextStyle(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Show only key metrics in the card
+            _buildKeyMetrics(),
+            const SizedBox(height: 16),
+            // Add a button to view full details
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Constants.purple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                const SizedBox(height: 8),
-                _buildBatchStatusChart(report.batchStatusSummary),
-                if (report.nonCompletedBatchCount > 0) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'Non-completed Batches: ${report.nonCompletedBatchCount}',
-                    style: const TextStyle(color: Colors.orange),
-                  ),
-                ],
-              ],
+                onPressed: () => _showDetailView(context),
+                child: const Text('View Details'),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildKeyMetrics() {
+    return Column(
+      children: [
+        _buildDetailRow('Status', report.rideStatus),
+        _buildDetailRow('Total Visitors', '${report.totalVisitors}'),
+        _buildDetailRow('Average Queue Time', report.averageQueueTime),
+      ],
     );
   }
 
@@ -265,82 +272,18 @@ class AnalyticsReportCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.grey,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(label, style: const TextStyle(color: Colors.grey)),
+          Text(value, style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
   }
 
-  Widget _buildBatchStatusChart(BatchStatusSummary summary) {
-    return SizedBox(
-      height: 200,
-      child: PieChart(
-        PieChartData(
-          sectionsSpace: 0,
-          centerSpaceRadius: 40,
-          sections: [
-            if (summary.completed > 0)
-              PieChartSectionData(
-                color: Colors.green,
-                value: summary.completed.toDouble(),
-                title: '${summary.completed}',
-                radius: 50,
-                titleStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            if (summary.pending > 0)
-              PieChartSectionData(
-                color: Colors.blue,
-                value: summary.pending.toDouble(),
-                title: '${summary.pending}',
-                radius: 50,
-                titleStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            if (summary.failed > 0)
-              PieChartSectionData(
-                color: Colors.red,
-                value: summary.failed.toDouble(),
-                title: '${summary.failed}',
-                radius: 50,
-                titleStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            if (summary.other > 0)
-              PieChartSectionData(
-                color: Colors.grey,
-                value: summary.other.toDouble(),
-                title: '${summary.other}',
-                radius: 50,
-                titleStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-          ],
-        ),
+  void _showDetailView(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RideAnalyticsDetailView(report: report),
       ),
     );
   }

@@ -25,6 +25,10 @@ class AdminRideProvider extends ChangeNotifier {
     return _adminRideService.streamCurrentHourBatches(rideId);
   }
 
+  Stream<List<BatchModel>> streamQueueManagementBatches(String rideId) {
+    return _adminRideService.streamQueueManagementBatches(rideId);
+  }
+
   // Updates a ride's status
   Future<void> updateRideStatus({
     required String rideId,
@@ -61,7 +65,9 @@ class AdminRideProvider extends ChangeNotifier {
       print('[COMPLETE-BATCH] Admin ID: $adminId');
       print('[COMPLETE-BATCH] Timestamp (Local): ${now.toLocal()}');
       print('[COMPLETE-BATCH] Timestamp (UTC): ${now.toUtc()}');
-
+      print('[COMPLETE-BATCH] Timestamp (UTC): ${now}');
+      print('[COMPLETE-BATCH] Timestamp (UTC): ${now.millisecondsSinceEpoch}');
+      final nowUtc = currentTime.toUtc();
       await _adminRideService.completeBatch(
         rideId: rideId,
         batchId: batchId,
@@ -105,6 +111,27 @@ class AdminRideProvider extends ChangeNotifier {
     } catch (e) {
       print('[MANAGE-QUEUE] Error: $e');
       rethrow;
+    }
+  }
+
+  Future<void> markVisitorAsMissed({
+    required String rideId,
+    required String batchId,
+    required String visitorId,
+    required String adminId,
+    required String reason,
+  }) async {
+    try {
+      await _adminRideService.markVisitorAsMissedQueue(
+        rideId: rideId,
+        batchId: batchId,
+        visitorId: visitorId,
+        adminId: adminId,
+        reason: reason,
+      );
+    } catch (e) {
+      print('Error marking visitor as missed: $e');
+      throw e;
     }
   }
 

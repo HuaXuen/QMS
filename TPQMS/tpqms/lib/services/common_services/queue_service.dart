@@ -25,12 +25,6 @@ class QueueService {
     required int startAt,
     required int endAt,
   }) async {
-    print('[QUEUE] Starting enqueueVisitor operation');
-    print(
-        '[QUEUE] Parameters - userId: $userId, rideId: $rideId, batchId: $batchId');
-    print(
-        '[QUEUE] Queue time - start: ${DateTime.fromMillisecondsSinceEpoch(startAt)}, end: ${DateTime.fromMillisecondsSinceEpoch(endAt)}');
-
     try {
       // First, read the current batch data to check if queue is possible
       final ridePath = '$_ridesPath/$rideId';
@@ -62,7 +56,8 @@ class QueueService {
         return {
           'success': false,
           'message':
-              'Time conflict detected: You are already queued for ${conflictCheck['conflictingRide']} during ${conflictCheck['conflictTime']}, please select another timeslot.'
+              'Time conflict detected: You are already queued for ${conflictCheck['conflictingRide']}' +
+                  ' during ${conflictCheck['conflictTime']}, please select another timeslot.'
         };
       }
 
@@ -112,8 +107,7 @@ class QueueService {
           startAt: startAt,
           endAt: endAt,
           waitTime: waitTime,
-          joinQueueTime: joinQueueTimeUtc, // Add new field
-
+          joinQueueTime: joinQueueTimeUtc,
           status: 'waiting');
       print('[QUEUE] Created queue model: ${queueModel.toString()}');
 

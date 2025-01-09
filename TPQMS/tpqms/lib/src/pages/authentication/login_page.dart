@@ -101,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(height: 32),
 
                     CustomElevatedButtonwithIcon(
-                      text: 'Sign In with Phone Number',
+                      text: 'Sign in with Phone Number',
                       icon: Icons.phone_iphone,
                       onPressed: () {
                         Navigator.pushReplacement(

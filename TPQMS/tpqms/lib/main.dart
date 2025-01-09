@@ -82,7 +82,7 @@ void main() async {
     ChangeNotifierProvider(
       create: (context) => QueueProvider(_queueService, _ticketService,
           _userService, _rideService, _notificationService, _locationProvider),
-      lazy: false,
+      lazy: true,
     ),
     ChangeNotifierProvider(
       create: (_) => AdminRideProvider(

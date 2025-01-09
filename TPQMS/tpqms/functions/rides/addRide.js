@@ -110,6 +110,7 @@ export async function addRideAndBatches(data) {
           batchStatus: "pending",
           completedAt: 0, // Placeholder
           queueFilledAt: "Not Filled Up", // String for flexibility
+          completedBy: null,
         };
       }
     }

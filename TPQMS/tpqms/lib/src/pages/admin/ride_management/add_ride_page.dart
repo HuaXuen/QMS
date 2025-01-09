@@ -109,6 +109,17 @@ class _RideManagementPageState extends State<RideManagementPage> {
         currentIndex: 1, // This indicates we're on the Add Rides page
         child: Scaffold(
           backgroundColor: Constants.primaryBackground,
+          appBar: AppBar(
+            title: const Text(
+              'Add New Ride',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: const Color(0xFF8B5CF6),
+            elevation: 0,
+          ),
           body: SafeArea(
             child: SingleChildScrollView(
               child: Center(

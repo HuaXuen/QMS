@@ -76,6 +76,54 @@ class AdminRideService {
     });
   }
 
+  Stream<List<BatchModel>> streamQueueManagementBatches(String rideId) {
+    return _realtimeDb.streamData('$_ridesPath/$rideId/batches').map((event) {
+      try {
+        final Map data = event.snapshot.value as Map;
+        final now = DateTime.now();
+        final nowUtc = DateTime.utc(
+            now.year, now.month, now.day, now.hour, now.minute, now.second);
+
+        // Get all batches and sort them chronologically
+        final allBatches = data.entries
+            .map((entry) => BatchModel.fromMap(entry.key as String,
+                Map<String, dynamic>.from(entry.value as Map)))
+            .toList()
+          ..sort((a, b) => a.startAt.compareTo(b.startAt));
+
+        // Find the most recent previous batch
+        BatchModel? previousBatch;
+        try {
+          previousBatch = allBatches.lastWhere((batch) {
+            final endTime =
+                DateTime.fromMillisecondsSinceEpoch(batch.endAt, isUtc: true);
+            return endTime.isBefore(nowUtc);
+          });
+        } catch (e) {
+          // No previous batch found, that's okay
+        }
+
+        // Get current and upcoming batches
+        final currentAndUpcomingBatches = allBatches.where((batch) {
+          final endTime =
+              DateTime.fromMillisecondsSinceEpoch(batch.endAt, isUtc: true);
+          return endTime.isAfter(nowUtc);
+        }).toList();
+
+        // Combine previous batch with current and upcoming batches
+        final resultBatches = [
+          if (previousBatch != null) previousBatch,
+          ...currentAndUpcomingBatches,
+        ];
+
+        return resultBatches;
+      } catch (e) {
+        print('[ADMIN-SERVICE] Error processing batches: $e');
+        return [];
+      }
+    });
+  }
+
   // Add to admin_ride_service.dart
   Future<BatchModel?> getBatch(String rideId, String batchId) async {
     try {
@@ -139,6 +187,14 @@ class AdminRideService {
         print(
             '[ADMIN-SERVICE] Ride going under maintenance, processing all batches');
         await updateToUnderMaintenance(
+          rideId: rideId,
+          adminId: adminId,
+          timestamp: DateTime.now().millisecondsSinceEpoch,
+        );
+      }
+      if (newStatus.toLowerCase() == 'closed') {
+        print('[ADMIN-SERVICE] Ride is closed, processing all batches');
+        await updateToClosed(
           rideId: rideId,
           adminId: adminId,
           timestamp: DateTime.now().millisecondsSinceEpoch,
@@ -218,6 +274,9 @@ class AdminRideService {
             updates['$batchesPath/$batchId/completedAt'] = timestamp;
             updates['$batchesPath/$batchId/batchStatus'] = 'failed';
             updates['$batchesPath/$batchId/completedBy'] = adminId;
+            updates['$batchesPath/$batchId/queueIds'] = [
+              'empty'
+            ]; // Reset queue
             updates['$batchesPath/$batchId/maintenanceTimestamp'] = timestamp;
 
             // Remove queue status for each visitor
@@ -290,6 +349,131 @@ class AdminRideService {
     }
   }
 
+  // Updates a ride to 'closed' status and handles all affected visitors
+  Future<void> updateToClosed({
+    required String rideId,
+    required String adminId,
+    required int timestamp,
+  }) async {
+    try {
+      print('[ADMIN-SERVICE] Starting closure process for ride: $rideId');
+
+      // First, get ride data to verify it exists
+      final ridePath = '$_ridesPath/$rideId';
+      final rideData = await _realtimeDb.read(ridePath);
+
+      if (rideData == null) {
+        throw Exception('Ride not found');
+      }
+
+      // Get all batches
+      final batchesPath = '$ridePath/batches';
+      final batchesData = await _realtimeDb.read(batchesPath);
+
+      if (batchesData == null) {
+        print('[ADMIN-SERVICE] No batches found for ride');
+        return;
+      }
+
+      final Map<String, dynamic> updates = {};
+      final Set<String> allAffectedVisitors = {};
+
+      // Process each batch
+      for (final entry in batchesData.entries) {
+        final batchId = entry.key;
+        final batchData = Map<String, dynamic>.from(entry.value as Map);
+
+        // Only process batches that haven't been completed yet
+        if (batchData['completedAt'] == 0) {
+          print('[ADMIN-SERVICE] Processing batch: $batchId');
+
+          // Get visitors in this batch
+          final List<String> queueIds =
+              List<String>.from(batchData['queueIds'] ?? []);
+          queueIds.remove('empty');
+
+          if (queueIds.isNotEmpty) {
+            // Add these visitors to our total affected list
+            allAffectedVisitors.addAll(queueIds);
+
+            // Update batch status and remove all visitors
+            updates['$batchesPath/$batchId/completedAt'] = timestamp;
+            updates['$batchesPath/$batchId/batchStatus'] = 'failed';
+            updates['$batchesPath/$batchId/completedBy'] = adminId;
+            updates['$batchesPath/$batchId/queueIds'] = [
+              'empty'
+            ]; // Reset queue
+            updates['$batchesPath/$batchId/closureTimestamp'] = timestamp;
+
+            // Remove queue status for each visitor
+            for (final visitorId in queueIds) {
+              updates['queueStatus/$visitorId/$rideId'] = null;
+            }
+          }
+        }
+      }
+
+      // Execute all updates in a single transaction
+      if (updates.isNotEmpty) {
+        print(
+            '[ADMIN-SERVICE] Executing updates for ${allAffectedVisitors.length} total affected visitors');
+        await _realtimeDb.runMultiPathTransaction(updates: updates);
+
+        // Update tickets for all affected visitors
+        for (final visitorId in allAffectedVisitors) {
+          final queryFilters = [QueryFilter('userId', visitorId)];
+          final ticketsSnapshot = await _firestoreService.queryDocuments(
+            'tickets',
+            queryFilters,
+          );
+
+          // Decrement rides queued for each visitor's ticket
+          for (final doc in ticketsSnapshot.docs) {
+            await _firestoreService.updateDocument('tickets', doc.id, {
+              'ridesQueued': FieldValue.increment(-1),
+            });
+          }
+        }
+
+        // Handle notifications
+        final rideModel = await _rideService.getRideById(rideId);
+        if (rideModel != null) {
+          // Cancel all existing notifications for this ride
+          final batches = await _rideService.getBatches(rideId);
+          for (final batch in batches) {
+            await _notificationService.cancelRideNotification(batch);
+          }
+
+          // Send closure notification to all affected visitors
+          await _notificationService.sendClosedNotification(
+            rideModel,
+            affectedVisitors: allAffectedVisitors.toList(),
+          );
+        }
+
+        // Log the closure action
+        await _logAdminAction(
+          adminId: adminId,
+          rideId: rideId,
+          action: 'ride_closure',
+          details: {
+            'closure_time': timestamp,
+            'total_affected_visitors': allAffectedVisitors.length,
+            'closure_time_utc': DateTime.fromMillisecondsSinceEpoch(timestamp)
+                .toUtc()
+                .toString(),
+          },
+        );
+      }
+
+      print(
+          '[ADMIN-SERVICE] Successfully processed closure updates for ride $rideId');
+    } catch (e) {
+      print('[ADMIN-SERVICE] Error processing closure updates: $e');
+      throw Exception('Failed to process closure updates: $e');
+    }
+  }
+
   // Completes a batch and updates necessary records
   Future<void> completeBatch({
     required String rideId,
@@ -299,13 +483,7 @@ class AdminRideService {
   }) async {
     try {
       print('\n[ADMIN-SERVICE] Starting batch completion process');
-      print('[ADMIN-SERVICE] Ride ID: $rideId');
-      print('[ADMIN-SERVICE] Batch ID: $batchId');
-      print('[ADMIN-SERVICE] Admin ID: $adminId');
-      print(
-          '[ADMIN-SERVICE] Timestamp: ${DateTime.fromMillisecondsSinceEpoch(timestamp)}');
 
-      // 1. Get current batch data
       final batchPath = '$_ridesPath/$rideId/batches/$batchId';
       final batchData = await _realtimeDb.read(batchPath);
 
@@ -313,34 +491,78 @@ class AdminRideService {
         throw Exception('Batch not found');
       }
 
-      // 2. Get list of users in this batch (but don't remove them)
       final List<String> queueIds =
           List<String>.from(batchData['queueIds'] ?? []);
-      queueIds.remove('empty'); // Remove placeholder just for processing
+      queueIds.remove('empty');
 
+      int totalBatchWaitTime = 0;
+      int processedUsers = 0;
+      final now = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      final malaysiaOffset = Duration(hours: 8);
+      final adjustedTimestamp = now.add(malaysiaOffset).millisecondsSinceEpoch;
+
+      // Get queue status for each user to calculate wait times
+      for (final userId in queueIds) {
+        final queueStatusPath = 'queueStatus/$userId/$rideId';
+        final queueStatus = await _realtimeDb.read(queueStatusPath);
+
+        if (queueStatus != null && queueStatus['joinQueueTime'] != null) {
+          final joinTime = queueStatus['joinQueueTime'] as int;
+          print('[ADMIN-SERVICE] join time: ${joinTime}');
+
+          // Calculate wait time from join time to completion
+          if (adjustedTimestamp > joinTime) {
+            final waitTime = adjustedTimestamp - joinTime;
+            totalBatchWaitTime += waitTime;
+            processedUsers++;
+
+            // Add detailed logging
+            print('[ADMIN-SERVICE] Wait time calculation for user $userId:');
+            print(
+                '  Join time: ${DateTime.fromMillisecondsSinceEpoch(joinTime)}');
+            print('  Wait duration: ${waitTime / 1000 / 60} minutes');
+          }
+        }
+      }
+
+      print('[ADMIN-SERVICE] Timestamp conversions:');
+      print('  Original completion time: ${now}');
       print(
-          '[ADMIN-SERVICE] Processing ${queueIds.length} users in completed batch');
+          '  Adjusted completion time: ${DateTime.fromMillisecondsSinceEpoch(adjustedTimestamp)}');
 
-      // 3. Prepare updates - only update batch status
+      // Calculate average wait time for the batch
+      final averageWaitTime =
+          processedUsers > 0 ? totalBatchWaitTime ~/ processedUsers : 0;
+
+      print('[ADMIN-SERVICE] Batch timing details:');
+      print(
+          '  Start time: ${DateTime.fromMillisecondsSinceEpoch(batchData['startAt'] as int)}');
+      print(
+          '  End time: ${DateTime.fromMillisecondsSinceEpoch(batchData['endAt'] as int)}');
+      print(
+          '  Completion time: ${DateTime.fromMillisecondsSinceEpoch(adjustedTimestamp)}');
+      print('  Average wait time: ${averageWaitTime / 1000 / 60} minutes');
+
+      // Prepare updates with additional wait time information
       final Map<String, dynamic> updates = {
-        '$batchPath/completedAt': timestamp,
+        '$batchPath/completedAt': adjustedTimestamp,
         '$batchPath/batchStatus': 'completed',
         '$batchPath/completedBy': adminId,
+        '$batchPath/averageWaitTime':
+            averageWaitTime, // Add average wait time to batch
       };
 
-      // 4. Remove queue status entries for each user
-      // This allows them to queue for other rides
+      // Remove queue status entries for each user
       for (final userId in queueIds) {
         updates['queueStatus/$userId/$rideId'] = null;
 
-        // Update their ticket count
+        // Update ticket count
         final queryFilters = [QueryFilter('userId', userId)];
         final ticketsSnapshot = await _firestoreService.queryDocuments(
           'tickets',
           queryFilters,
         );
 
-        // Decrement rides queued count
         for (final doc in ticketsSnapshot.docs) {
           await _firestoreService.updateDocument('tickets', doc.id, {
             'ridesQueued': FieldValue.increment(-1),
@@ -348,10 +570,12 @@ class AdminRideService {
         }
       }
 
-      // 5. Execute all updates in a single transaction
+      // Execute updates
       await _realtimeDb.runMultiPathTransaction(updates: updates);
+      final batch = await _rideService.getBatchById(rideId, batchId);
 
-      // 6. Log the admin action
+      await _notificationService.cancelRideNotification(batch);
+      // Log admin action with wait time information
       await _logAdminAction(
         adminId: adminId,
         rideId: rideId,
@@ -360,6 +584,7 @@ class AdminRideService {
           'batch_id': batchId,
           'completion_time': timestamp,
           'users_processed': queueIds.length,
+          'average_wait_time': averageWaitTime,
           'completion_time_utc':
               DateTime.fromMillisecondsSinceEpoch(timestamp).toUtc().toString(),
         },
@@ -446,6 +671,87 @@ class AdminRideService {
       );
     } catch (e) {
       throw Exception('Failed to dequeue visitor: $e');
+    }
+  }
+
+  Future<void> markVisitorAsMissedQueue({
+    required String rideId,
+    required String batchId,
+    required String visitorId,
+    required String adminId,
+    required String reason,
+  }) async {
+    try {
+      // Similar to dequeueVisitor but with missedQueue increment
+      final batchPath = '$_ridesPath/$rideId/batches/$batchId';
+      final batchData = await _realtimeDb.read(batchPath);
+      final queueStatusPath = 'queueStatus/$visitorId/$rideId';
+
+      if (batchData == null) {
+        throw Exception('Batch not found');
+      }
+
+      // Get current queue IDs and remove the visitor
+      List<dynamic> queueIds = List.from(batchData['queueIds'] ?? []);
+      queueIds.remove(visitorId);
+
+      if (queueIds.isEmpty) {
+        queueIds.add('empty');
+      }
+
+      // Update the queue
+      final updates = {
+        '$batchPath/queueIds': queueIds,
+        '$batchPath/queueFilledAt': 'Not Filled Up',
+        queueStatusPath: null,
+      };
+
+      await _realtimeDb.runMultiPathTransaction(updates: updates);
+
+      // Get visitor's ticket and increment missedQueue
+      final queryFilters = [QueryFilter('userId', visitorId)];
+      final ticketsSnapshot = await _firestoreService.queryDocuments(
+        'tickets',
+        queryFilters,
+      );
+
+      // Update ticket counts for all matching tickets
+      for (final doc in ticketsSnapshot.docs) {
+        await _firestoreService.updateDocument('tickets', doc.id, {
+          'ridesQueued': FieldValue.increment(-1),
+          'missedQueue':
+              FieldValue.increment(1), // Increment missed queue count
+        });
+      }
+
+      // Handle notifications
+      final batch = await _rideService.getBatchById(rideId, batchId);
+      await _notificationService.cancelRideNotification(batch);
+
+      final rideModel = await _rideService.getRideById(rideId);
+      final batchModel = await _rideService.getBatchById(rideId, batchId);
+
+      if (rideModel != null && batchModel != null) {
+        await _notificationService.sendMissedQueueNotification(
+          rideModel,
+          batchModel,
+        );
+      }
+
+      // Log the action
+      await _logAdminAction(
+        adminId: adminId,
+        rideId: rideId,
+        action: 'mark_missed_queue',
+        details: {
+          'visitor_id': visitorId,
+          'batch_id': batchId,
+          'reason': reason,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+    } catch (e) {
+      throw Exception('Failed to mark visitor as missed queue: $e');
     }
   }
 

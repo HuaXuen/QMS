@@ -273,7 +273,7 @@ class AuthenticationProvider extends ChangeNotifier {
                 _userModel =
                     await _userService.getUserData(Constants.users, _uid!);
                 if (_userModel != null) {
-                  context.read<UserInfoProvider>().setCurrentUser(_userModel!);
+                  await _initializeProvidersForUser(context, _uid!);
                   _isSuccessful = true;
 
                   navigation.handleUserLoginNavigation(
@@ -322,6 +322,29 @@ class AuthenticationProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       showSnackBar(context, 'Error while resending OTP: $e');
+    }
+  }
+
+  // Add this new helper method
+  Future<void> _initializeProvidersForUser(
+      BuildContext context, String userId) async {
+    print('[AUTH] Initializing providers for user: $userId');
+
+    try {
+      // Initialize providers in sequence
+      final userInfoProvider = context.read<UserInfoProvider>();
+      final queueProvider = context.read<QueueProvider>();
+
+      // Set current user first
+      userInfoProvider.setCurrentUser(_userModel!);
+
+      // Then initialize queue provider
+      await queueProvider.initializeForUser(userId);
+
+      print('[AUTH] Providers initialized successfully');
+    } catch (e) {
+      print('[AUTH] Error initializing providers: $e');
+      throw Exception('Failed to initialize providers: $e');
     }
   }
 

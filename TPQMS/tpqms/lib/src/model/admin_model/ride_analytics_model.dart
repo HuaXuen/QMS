@@ -1,6 +1,8 @@
 // ride_analytics_model.dart
 
 // Model for individual batch status entries in the statusList array
+import 'package:intl/intl.dart';
+
 class BatchStatusEntry {
   final String batchKey; // Format: "2025-01-01T13..."
   final String? completedBy; // Admin ID who completed the batch (can be null)
@@ -18,6 +20,13 @@ class BatchStatusEntry {
       completedBy: map['completedBy'],
       status: map['status'] ?? 'unknown',
     );
+  }
+
+  // Add to BatchStatusEntry:
+  String get formattedBatchTime {
+    // Convert batchKey (2025-01-03T10-00-00) to readable format
+    final dateTime = DateTime.parse(batchKey.replaceAll('-', ':'));
+    return DateFormat('hh:mm a').format(dateTime);
   }
 }
 
@@ -75,6 +84,7 @@ class RideAnalyticsModel {
   final String rideStatus;
   final String timeOfReportGeneration;
   final int totalVisitors;
+  final int createdAt;
 
   RideAnalyticsModel({
     required this.rideName,
@@ -91,6 +101,7 @@ class RideAnalyticsModel {
     required this.rideStatus,
     required this.timeOfReportGeneration,
     required this.totalVisitors,
+    required this.createdAt, // Add this
   });
 
   factory RideAnalyticsModel.fromDocument(
@@ -124,6 +135,59 @@ class RideAnalyticsModel {
       rideStatus: reportData['rideStatus'] ?? 'unknown',
       timeOfReportGeneration: reportData['timeOfReportGeneration'] ?? '',
       totalVisitors: reportData['totalVisitors'] ?? 0,
+      createdAt: reportData['createdAt'] ?? 0, // Add this
     );
+  }
+
+  // Formatted getters for timestamps
+  String get formattedCreatedAt {
+    final date =
+        DateTime.fromMillisecondsSinceEpoch(int.parse(createdAt.toString()));
+    return DateFormat('MMM dd, yyyy, hh:mm a').format(date);
+  }
+
+  String get formattedTimeOfReport {
+    try {
+      // Check if the timeOfReportGeneration is already in the formatted style
+      if (timeOfReportGeneration.contains(',')) {
+        // It's already formatted, just return it
+        return timeOfReportGeneration;
+      }
+
+      // Otherwise, try to parse it as a standard datetime and format it
+      final dateTime = DateTime.parse(timeOfReportGeneration);
+      return DateFormat('MMM dd, yyyy, hh:mm a').format(dateTime);
+    } catch (e) {
+      print('Error formatting report time: $timeOfReportGeneration');
+      print('Error details: $e');
+      // Return the original string if parsing fails
+      return timeOfReportGeneration;
+    }
+  }
+
+  String formatBatchTime(String batchDateTime) {
+    try {
+      // First, split the date and time parts
+      final parts = batchDateTime.split('T');
+      if (parts.length != 2) {
+        return batchDateTime; // Return original if format is unexpected
+      }
+
+      // Keep the date part as is (with hyphens)
+      final datePart = parts[0];
+      // Replace hyphens with colons only in the time part
+      final timePart = parts[1].replaceAll('-', ':');
+
+      // Combine them back with a space
+      final formattedDateTime = '$datePart $timePart';
+
+      // Parse and format
+      final dateTime = DateTime.parse(formattedDateTime);
+      return DateFormat('hh:mm a').format(dateTime);
+    } catch (e) {
+      print('Error formatting batch time: $batchDateTime');
+      print('Error details: $e');
+      return batchDateTime; // Return original string if parsing fails
+    }
   }
 }
