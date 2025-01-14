@@ -225,6 +225,26 @@ export const cleanupAndArchiveBatches = async () => {
           analyticsData.batchStatusSummary.other++;
       }
 
+      function formatBatchTime(timestamp) {
+        // Create a date object from the timestamp
+        const date = new Date(timestamp);
+
+        // Get hours and minutes
+        let hours = date.getUTCHours();
+        const minutes = date.getUTCMinutes();
+
+        // Convert to 12-hour format
+        const period = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        hours = hours ? hours : 12; // Convert 0 to 12
+
+        // Pad minutes with leading zero if needed
+        const minutesPadded = minutes.toString().padStart(2, "0");
+
+        // Return formatted time string
+        return `${hours}:${minutesPadded} ${period}`;
+      }
+
       // Continue with existing analytics calculations...
       const visitorCount = Array.isArray(batch.queueIds)
         ? batch.queueIds.filter((id) => id !== "empty").length
@@ -233,12 +253,7 @@ export const cleanupAndArchiveBatches = async () => {
 
       if (batch.completedAt === 0) {
         analyticsData.nonCompletedBatchCount++;
-        const batchTime = new Date(batch.startAt).toLocaleString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-          timeZone: "Asia/Kuala_Lumpur",
-        });
+        const batchTime = formatBatchTime(batch.startAt);
         analyticsData.nonCompletedBatchTimes.push(batchTime);
       }
 
@@ -251,15 +266,7 @@ export const cleanupAndArchiveBatches = async () => {
         const completionTime = batch.completedAt - batch.startAt;
         if (completionTime < fastestCompletionTime) {
           fastestCompletionTime = completionTime;
-          fastestBatchStartTime = new Date(batch.startAt).toLocaleString(
-            "en-US",
-            {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kuala_Lumpur",
-            }
-          );
+          fastestBatchStartTime = formatBatchTime(batch.startAt);
         }
 
         totalQueueTime += completionTime;
@@ -309,9 +316,9 @@ export async function generateDummyBatchData(rideId, adminId) {
       "operator_" + nanoid(6),
     ];
 
-    // Set up time range (10 AM to 11 PM)
-    const baseDate = new Date("2025-01-03T10:00:00");
-    const endTime = new Date("2025-01-03T23:00:00");
+    // Set up time range (10 AM to 6 PM on January 14th, 2025)
+    const baseDate = new Date("2025-01-14T10:00:00");
+    const endTime = new Date("2025-01-14T18:00:00");
     const batchInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
 
     const batches = {};
@@ -319,14 +326,19 @@ export async function generateDummyBatchData(rideId, adminId) {
 
     // Helper function to determine visitors based on time of day
     function getVisitorCountForTime(hour) {
-      if (hour >= 12 && hour < 16)
-        return Math.floor(Math.random() * 4) + 7; // Peak: 7-10 visitors
-      else if (hour >= 16 && hour < 20)
-        return Math.floor(Math.random() * 4) + 6; // High: 6-9 visitors
-      else return Math.floor(Math.random() * 4) + 3; // Normal: 3-6 visitors
+      if (hour >= 11 && hour < 14) {
+        // Peak hours: 11 AM - 2 PM (7-10 visitors)
+        return Math.floor(Math.random() * 4) + 7;
+      } else if (hour >= 14 && hour < 16) {
+        // High traffic: 2 PM - 4 PM (5-9 visitors)
+        return Math.floor(Math.random() * 5) + 5;
+      } else {
+        // Normal hours: 10-11 AM and 4-6 PM (3-5 visitors)
+        return Math.floor(Math.random() * 3) + 3;
+      }
     }
 
-    // Generate batches with realistic operator assignments
+    // Generate batches with 100% completion rate
     while (currentTime < endTime) {
       const batchKey = currentTime
         .toISOString()
@@ -342,24 +354,22 @@ export async function generateDummyBatchData(rideId, adminId) {
       const startAt = currentTime.getTime();
       const endAt = startAt + batchInterval;
 
-      // Determine batch completion with 90% chance
-      const isCompleted = Math.random() < 0.9;
-      const completedAt = isCompleted ? endAt + Math.random() * 60000 : 0;
+      // All batches are completed (100% completion rate)
+      const completedAt = endAt + Math.random() * 60000; // Random completion time within 1 minute after endAt
 
-      // Assign a random operator for completed batches
-      const assignedOperator = isCompleted
-        ? operators[Math.floor(Math.random() * operators.length)]
-        : null;
+      // Assign a random operator for all batches (since all are completed)
+      const assignedOperator =
+        operators[Math.floor(Math.random() * operators.length)].toString();
 
       batches[batchKey] = {
         startAt,
         endAt,
         queueIds,
-        batchStatus: isCompleted ? "completed" : "pending",
+        batchStatus: "completed", // Always completed
         completedAt,
         queueFilledAt:
           queueIds.length >= 10
-            ? new Date(startAt - Math.random() * 300000).toISOString()
+            ? new Date(startAt - Math.random() * 300000).toISOString() // Random time before batch start
             : "Not Filled Up",
         completedBy: assignedOperator,
       };
