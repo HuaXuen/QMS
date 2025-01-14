@@ -37,6 +37,9 @@ class RideAnalyticsProvider with ChangeNotifier {
         // Extract date from document ID to access the correct data
         final date = documentId.split('_').last;
         final analyticsData = data[date] as Map<String, dynamic>? ?? {};
+        print('Document ID: $documentId');
+        print('Extracted Date: $date');
+        print('Raw Data for Date: ${data[date]}');
 
         return RideAnalyticsModel.fromDocument(
             documentId, {date: analyticsData});
