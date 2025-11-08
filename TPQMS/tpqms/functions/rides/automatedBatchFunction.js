@@ -20,7 +20,7 @@ export const generateDailyBatches = async () => {
   }
 
   today.setHours(10, 0, 0, 0); //Start time: 10:00 AM (local time)
-  const endHour = 18; //End time: 6 PM (local time) 18
+  const endHour = 19; //End time: 6 PM (local time) 18
   const promises = [];
   ridesSnapshot.forEach((rideSnapshot) => {
     const ride = rideSnapshot.val();
@@ -35,7 +35,7 @@ export const generateDailyBatches = async () => {
         const endAt = new Date(startAt.getTime() + duration * 60000);
 
         //Ensure batch does not exceed 6 PM
-        if (startAt.getHours() >= 18) break;
+        if (startAt.getHours() >= 19) break;
 
         //Generate the batch key in local time
         const batchKey = `${startAt.getFullYear()}-${(startAt.getMonth() + 1)
